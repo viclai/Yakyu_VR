@@ -7,12 +7,12 @@
 <html>
   <head>
     <meta charset="UTF-8"/>
-    <script type="text/javascript" src="MV.js"                       ></script>
-    <script type="text/javascript" src="webgl-obj-loader.js"         ></script>
-    <script type="text/javascript" src="tinywebgl-ucla.js"           ></script> <!-- Library functions-->
-    <script type="text/javascript" src="example-scene-components.js" ></script>
-    <script type="text/javascript" src="example-shapes.js"           ></script>
-    <script type="text/javascript" src="example-shaders.js"          ></script>
+    <script type="text/javascript" src="MV.js"               ></script>
+    <script type="text/javascript" src="webgl-obj-loader.js" ></script>
+    <script type="text/javascript" src="tinywebgl-ucla.js"   ></script> <!-- Library functions-->
+    <script type="text/javascript" src="scene-components.js" ></script>
+    <script type="text/javascript" src="shapes.js"           ></script>
+    <script type="text/javascript" src="shaders.js"          ></script>
     <script type="text/javascript"> "use strict"
       // ********************* WHOLE PROGRAM'S ENTRY POINT *******************
       window.onload = function init() {
@@ -21,19 +21,31 @@
          * per page. Construct a Canvas_Manager, which instances a WebGL 
          * context for our main canvas. Set your background here, too.
          */
+        var background = Color(102/255, 204/255, 1, 1);
         window.contexts = {
-          main_canvas: new Canvas_Manager("gl-canvas", Color(0, 0, 0, 1))
+          main_canvas: new Canvas_Manager("gl-canvas", background)
         };
         
-        // Now put all our shader programs in the GPU.
+        // Put all shader programs in the GPU.
         var shaders = ["Phong_Model", "Funny_Shader", "Fake_Bump_Map"];
-        for (let s of shaders)
-          contexts["main_canvas"].shaders_in_use[s] = (new window[s](contexts["main_canvas"].gl));   
+        for (let s of shaders) {
+          contexts["main_canvas"].shaders_in_use[s] = (new window[s](
+            contexts["main_canvas"].gl
+          ));
+        } 
                     
-        // IMPORTANT: -- You have to include all your new image files in the following array:
-        var texture_files_to_load = ["text.png"]; // Put all our texture images in the GPU.
-        for (let f of texture_files_to_load)
-          contexts["main_canvas"].textures_in_use[f] = (new Texture(contexts["main_canvas"].gl, f, true));
+        // IMPORTANT: Include all your new image files in the following array:
+        var texturesDir = "resources/"
+        var texture_files_to_load = [ // Put all texture images in the GPU.
+          "text.png",
+          "grass.jpg",
+          "stitching.jpg"
+        ];
+        for (let f of texture_files_to_load) {
+          contexts["main_canvas"].textures_in_use[f] = (new Texture(
+            contexts["main_canvas"].gl, texturesDir + f, true
+          ));
+        }
 
         /*
          * We instantiate some of our custom "Scene_Component" subclasses 
@@ -41,7 +53,11 @@
          * which WebGL calls upon every time a draw / keyboard / mouse event
          * happens.
          */   
-        var scene_components = ["Debug_Screen", "Example_Camera", "Flag_Toggler"];
+        var scene_components = [
+          "Debug_Screen",
+          "Example_Camera",
+          "Flag_Toggler"
+        ];
         if (demos[0] == "")
           scene_components.push("Baseball_Scene");
         else {
@@ -52,7 +68,9 @@
         }
         for (let s of scene_components) { 
           // Register the demos with their Canvas_Manager.
-          contexts["main_canvas"].register_scene_component(new window[s](contexts["main_canvas"]));
+          contexts["main_canvas"].register_scene_component(new window[s](
+            contexts["main_canvas"]
+          ));
         }
         
         for (let c in contexts) {
@@ -68,7 +86,9 @@
         return w.requestAnimationFrame || w.webkitRequestAnimationFrame ||
                w.mozRequestAnimationFrame || w.oRequestAnimationFrame ||
                w.msRequestAnimationFrame ||
-               function( callback, element ) { w.setTimeout(callback, 1000/60);  };
+               function(callback, element) {
+                 w.setTimeout(callback, 1000/60);
+               };
       })(window);  
       
       var demos = [];

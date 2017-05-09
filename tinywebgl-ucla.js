@@ -105,17 +105,18 @@ Declare_Any_Class("Shape",
     'normalize_positions'()
       {
         var average_position = vec3(), average_length = 0;
-        for( let [i, p] of this.positions.entries() ) average_position  =  add( average_position, scale_vec( 1/this.positions.length, p ) );
-        for( let [i, p] of this.positions.entries() ) this.positions[i] =  subtract( p, average_position );
-        for( let [i, p] of this.positions.entries() ) average_length    += 1/this.positions.length * length(p);
-        for( let [i, p] of this.positions.entries() ) this.positions[i] =  scale_vec( 1/average_length, p );
+        for(let [i, p] of this.positions.entries()) average_position  =  add( average_position, scale_vec( 1/this.positions.length, p ) );
+        for(let [i, p] of this.positions.entries()) this.positions[i] =  subtract( p, average_position );
+        for(let [i, p] of this.positions.entries()) average_length    += 1/this.positions.length * length(p);
+        for(let [i, p] of this.positions.entries()) this.positions[i] =  scale_vec( 1/average_length, p );
       },
-    'insert_transformed_copy_into'(recipient, args, points_transform = identity())    // For building compound shapes.
-      { var temp_shape = new ( window[ this.class_name ] )( ...args );  // If you try to bypass making a temporary shape and instead directLy insert new data into
-                                                                        // the recipient, you'll run into trouble when the recursion tree stops at different depths.
-        for( var i = 0; i < temp_shape.indices.length; i++ ) recipient.indices.push( temp_shape.indices[i] + recipient.positions.length );
+    'insert_transformed_copy_into'(recipient, args, points_transform = identity()) // For building compound shapes.
+      {
+        var temp_shape = new ( window[ this.class_name ] )( ...args ); // If you try to bypass making a temporary shape and instead directly insert new data into
+                                                                       // the recipient, you'll run into trouble when the recursion tree stops at different depths.
+        for (var i = 0; i < temp_shape.indices.length; i++) recipient.indices.push(temp_shape.indices[i] + recipient.positions.length);
 
-        for( var i = 0; i < temp_shape.positions.length; i++ )  // Apply points_transform to all points added during this call
+        for (var i = 0; i < temp_shape.positions.length; i++) // Apply points_transform to all points added during this call
           { recipient.positions.push( mult_vec(                     points_transform    , temp_shape.positions[ i ].concat( 1 ) ).slice(0,3) );
             recipient.normals  .push( mult_vec( transpose( inverse( points_transform ) ), temp_shape.normals  [ i ].concat( 1 ) ).slice(0,3) );
           }
@@ -152,12 +153,19 @@ Declare_Any_Class("Shape",
       }
   } );
 
-Declare_Any_Class("Shortcut_Manager",        // Google shortcut.js for this keyboard library's full documentation; this copy of it is more compact.
+// Google shortcut.js for this keyboard library's full documentation; this copy of it is more compact.
+Declare_Any_Class("Shortcut_Manager",
   {
     'all_shortcuts': {},
-    'add'( shortcut_combination, recipient = window, callback, opt )
+    'add'(shortcut_combination, recipient = window, callback, opt)
       {
-        var default_options = { 'type':'keydown', 'propagate':false, 'disable_in_input':true, 'target':document, 'keycode':false }
+        var default_options = {
+          'type':'keydown',
+          'propagate' : false,
+          'disable_in_input' : true,
+          'target' : document,
+          'keycode': false
+        }
         if (!opt) opt = default_options;
         else     for(var dfo in default_options) if( typeof opt[dfo] == 'undefined' ) opt[dfo] = default_options[dfo];
         var ele = opt.target == 'string' ? document.getElementById(opt.target) : opt.target;
@@ -246,8 +254,8 @@ function Color(r, g, b, a) {
   return vec4( r, g, b, a );
 }     
 
-Declare_Any_Class("Graphics_Addresses",  // Find out the memory addresses internal to the graphics card of each of
-  { 'construct'( program, gl )            // its variables, and store them here locally for the Javascript to use.
+Declare_Any_Class("Graphics_Addresses", // Find out the memory addresses internal to the graphics card of each of
+  { 'construct'( program, gl )          // its variables, and store them here locally for the Javascript to use.
       { Declare_Any_Class( "Shader_Attribute",
         { 'construct'               (   name,                                         size, type, enabled, normalized, stride, pointer )
           { this.define_data_members( { index: gl.getAttribLocation( program, name ), size, type, enabled, normalized, stride, pointer } ); } } )
@@ -357,7 +365,7 @@ Declare_Any_Class("Canvas_Manager",
         }
         window.requestAnimFrame(this.render.bind(this)); // Now that this frame is drawn, request that render() happen again 
       }                                                  // as soon as all other web page events are processed.
-  } );
+  });
 
 // Wrap a pointer to a new texture buffer along with a new HTML image object.
 Declare_Any_Class("Texture",

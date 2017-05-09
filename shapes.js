@@ -11,6 +11,8 @@
  * we can then use GL calls -- special kernel functions to copy each of the 
  * lists one-to-one into new buffers in the graphics card's memory.
  * Contents:
+ * 0. My Shapes:
+ *      Base
  * 1. Some example simple primitives:
  *      Really easy shapes are at the beginning of the list just to demonstrate
  *      how Shape is used. Mimic these when making your own Shapes. You'll find
@@ -38,6 +40,228 @@
  *      Text_Line
  ****************************************************************************/
 
+ // 0. MY SHAPES:
+ // --------------------------------------------------------------------------
+
+Declare_Any_Class("Base",
+  {
+    'populate'()
+      {
+        this.positions     .push(vec3(-.25,-.5, 0), vec3(.25,-.5, 0), vec3(-.25,0,0), vec3(.25,0,0), vec3(0,.25, 0));
+        this.normals       .push(vec3(0,0,1), vec3(0,0,1), vec3(0,0,1), vec3(0,0,1), vec3(0,0,1));
+        this.texture_coords.push(vec2(0,0),   vec2(1,0),   vec2(0,1),   vec2(1,1)   );
+        this.indices       .push(0, 1, 2, 1, 3, 2, 4, 2, 3);
+      }
+  }, Shape)
+
+Declare_Any_Class("Quarter_Circle_Diamond",
+  {
+    'populate'()
+      {
+        /*var radius = .1;
+        var diamond_width = .45;
+        var start = radius + (radius * Math.cos(radians(60)));
+        var end = start + diamond_width;
+        this.positions.push(vec3(radius,radius,0)); // Index 0
+        this.normals.push(vec3(0,0,1));
+        // Indices 1 - 91
+        for (var i = 0; i <= 90; i++) {
+          this.positions.push(
+            vec3(
+              radius + ((1 - radius) * Math.cos(radians(i))),
+              radius + ((1 - radius) * Math.sin(radians(i))),
+              0
+            )
+          );
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        
+        // Indices 92 - 95
+        this.positions.push(
+          vec3(start, start, 0),
+          vec3(start, end, 0),
+          vec3(end, start, 0),
+          vec3(end, end, 0)
+        );
+        this.normals.push(vec3(0,0,1), vec3(0,0,1), vec3(0,0,1), vec3(0,0,1));
+        this.texture_coords.push(vec2(0,0), vec2(0,0), vec2(0,0), vec2(0,0));
+
+        this.indices.push(0, 1, 92,
+                          0, 92, 94,
+                          0, 94, 1,
+                          1, 94, 92,
+                          0, 92, 91,
+                          91, 93, 92,
+                          91, 93, 95,
+                          1, 94, 95);
+        
+        var i = 90;
+        while (radius + ((1 - radius) * Math.sin(radians(i))) > end) {
+          this.indices.push(i + 1, i, 93)
+          i -= 1;
+        }
+        
+        i = 0;
+        while (radius + ((1 - radius) * Math.cos(radians(i))) > end) {
+          this.indices.push(94, i, i + 1);
+          i += 1;
+        }
+        
+        // Second base
+        // Indices 96 - 186
+        for (var deg = 180; deg <= 270; deg++) {
+          this.positions.push(vec3(end + (radius * Math.cos(radians(deg))), end + (radius * Math.sin(radians(deg))),0));
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        for (var j = 96; j < 186; j++) {
+          this.indices.push(95, j, j + 1);
+        }
+        
+        // First base
+        // Indices 187 - 277
+        for (var deg = 90; deg <= 180; deg++) {
+          this.positions.push(vec3(end + (radius * Math.cos(radians(deg))), start + (radius * Math.sin(radians(deg))),0));
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        for (var j = 187; j < 277; j++) {
+          this.indices.push(94, j, j + 1);
+        }
+
+        // Third base
+        // Indices 278 - 368
+        for (var deg = 270; deg <= 360; deg++) {
+          this.positions.push(vec3(start + (radius * Math.cos(radians(deg))), end + (radius * Math.sin(radians(deg))),0));
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        for (var j = 278; j < 368; j++) {
+          this.indices.push(93, j, j + 1);
+        }
+        
+        // Home base
+        // Indices 369 - 728
+        var x;
+        var y;
+        for (var deg = 0; deg < 360; deg++) {
+          x = radius + (radius * Math.cos(radians(deg)));
+          y = radius + (radius * Math.sin(radians(deg)));
+          this.positions.push(
+            vec3(
+              radius + (radius * Math.cos(radians(deg))),
+              radius + (radius * Math.sin(radians(deg))),
+              0
+            )
+          );
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        
+        for (var j = 369; j < 728; j++) {
+          this.indices.push(0, j, j + 1);
+        }
+        this.indices.push(0, 369, 728);*/
+        var radius = .1;
+        var diamond_width = .5;
+        var start = radius + (radius * Math.cos(radians(60)));
+        var end = start + diamond_width;
+        this.positions.push(vec3(radius,radius,0)); // Index 0
+        this.normals.push(vec3(0,0,1));
+        // Indices 1 - 91
+        for (var i = 0; i <= 90; i++) {
+          this.positions.push(
+            vec3(
+              radius + ((1 - radius) * Math.cos(radians(i))),
+              radius + ((1 - radius) * Math.sin(radians(i))),
+              0
+            )
+          );
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        
+        // Indices 92 - 94
+        this.positions.push(
+          vec3(start, end, 0),
+          vec3(end, start, 0),
+          vec3(end, end, 0)
+        );
+        this.normals.push(vec3(0,0,1), vec3(0,0,1), vec3(0,0,1));
+        this.texture_coords.push(vec2(0,0), vec2(0,0), vec2(0,0));
+
+        // Home base
+        // Indices 95 - 454
+        for (var deg = 0; deg < 360; deg++) {
+          this.positions.push(
+            vec3(
+              radius + (radius * Math.cos(radians(deg))),
+              radius + (radius * Math.sin(radians(deg))),
+              0
+            )
+          );
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        for (var j = 95; j < 454; j++) {
+          this.indices.push(0, j, j + 1);
+        }
+        this.indices.push(0, 95, 454);
+
+        this.indices.push(184, 92, 91);
+        this.indices.push(184, 154, 92);
+        this.indices.push(95, 93, 124);
+        this.indices.push(93, 94, 1);
+        this.indices.push(124, 636, 93);
+
+        var i = 90;
+        while (radius + ((1 - radius) * Math.sin(radians(i))) > end) {
+          this.indices.push(i + 1, i, 92)
+          i -= 1;
+        }
+        
+        i = 0;
+        while (radius + ((1 - radius) * Math.cos(radians(i))) > end) {
+          this.indices.push(93, i, i + 1);
+          i += 1;
+        }
+        
+        // Second base
+        // Indices 455 - 545
+        for (var deg = 180; deg <= 270; deg++) {
+          this.positions.push(vec3(end + (radius * Math.cos(radians(deg))), end + (radius * Math.sin(radians(deg))),0));
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        for (var j = 455; j < 545; j++) {
+          this.indices.push(94, j, j + 1);
+        }
+        
+        // First base
+        // Indices 546 - 636
+        for (var deg = 90; deg <= 180; deg++) {
+          this.positions.push(vec3(end + (radius * Math.cos(radians(deg))), start + (radius * Math.sin(radians(deg))),0));
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        for (var j = 546; j < 636; j++) {
+          this.indices.push(93, j, j + 1);
+        }
+        
+        // Third base
+        // Indices 637 - 727
+        for (var deg = 270; deg <= 360; deg++) {
+          this.positions.push(vec3(start + (radius * Math.cos(radians(deg))), end + (radius * Math.sin(radians(deg))),0));
+          this.normals.push(vec3(0,0,1));
+          this.texture_coords.push(vec2(0,0));
+        }
+        for (var j = 637; j < 727; j++) {
+          this.indices.push(92, j, j + 1);
+        }
+      }
+  }, Shape)
+
 // 1. TUTORIAL SHAPES:
 //----------------------------------------------------------------------------
 
@@ -57,8 +281,8 @@ Declare_Any_Class("Triangle",
 
 // *********** SQUARE ***********
 // A square, demonstrating shared vertices. On any planar surface, the interior
-// edges don't make any important seams. In these cases there's no reason not 
-// to re-use values of the common vertices between triangles. This makes all 
+// edges don't make any important seams. In these cases there's no reason not
+// to re-use values of the common vertices between triangles. This makes all
 // the vertex arrays (position, normals, etc) smaller and more cache friendly.
 Declare_Any_Class("Square",
   {
@@ -116,8 +340,7 @@ Declare_Any_Class("Windmill",
   {
     'populate'(num_blades)
       {
-        for(var i = 0; i < num_blades; i++) // A loop to automatically generate the triangles.
-        {
+        for (var i = 0; i < num_blades; i++) { // A loop to automatically generate the triangles.
           var spin = rotation( i * 360/num_blades, 0, 1, 0 );         // Rotate around a few degrees in XZ plane to place each new point.
           var newPoint  = mult_vec( spin, vec4( 1, 0, 0, 1 ) );       // Apply that XZ rotation matrix to point (1,0,0) of the base triangle.
           this.positions.push( vec3( newPoint[0], 0, newPoint[2] ) ); // Store this XZ position. This is point 1.
@@ -191,7 +414,7 @@ Declare_Any_Class("Subdivision_Sphere",
 // .obj file.  See webgl-obj-loader.js for the rest of the relevant code.
 Declare_Any_Class("Shape_From_File",
   {
-    populate(filename) // TODO: Should it be 'populate'?
+    populate(filename)
       {
         this.filename = filename;
         this.webGLStart = function(meshes) {
@@ -265,7 +488,8 @@ Declare_Any_Class("Regular_2D_Polygon", // Approximates a flat disk / circle
       {
         Surface_Of_Revolution.prototype.insert_transformed_copy_into(this, [rows, columns, [vec3(0, 0, 0), vec3(1, 0, 0)]]); 
         for (let t in this.texture_coords) {
-          this.texture_coords[t][0] = this.positions[t][0]/2 + 0.5; this.texture_coords[t][1] = this.positions[t][1]/2 + 0.5;
+          this.texture_coords[t][0] = this.positions[t][0]/2 + 0.5;
+          this.texture_coords[t][1] = this.positions[t][1]/2 + 0.5;
         }
       }
   }, Shape)
@@ -364,7 +588,7 @@ Declare_Any_Class("Cube",
           for( var j = 0; j < 2; j++ ) {
             var square_transform = mult( rotation( i == 0 ? 90 : 0, vec3( 1, 0, 0 ) ), rotation( 180 * j - ( i == 1 ? 90 : 0 ), vec3( 0, 1, 0 ) ) );
                 square_transform = mult( square_transform, translation(0, 0, 1) );
-            Square.prototype.insert_transformed_copy_into( this, [], square_transform );             
+            Square.prototype.insert_transformed_copy_into(this, [], square_transform);             
           }
       }
   }, Shape)

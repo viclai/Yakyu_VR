@@ -336,7 +336,7 @@ function scale( x, y, z )
 //  ModelView Matrix Generators
 //
 
-function lookAt( eye, at, up )
+function lookAt(eye, at, up)
 {
     if ( !Array.isArray(eye) || eye.length != 3) {
         throw "lookAt(): first parameter [eye] must be an a vec3";
