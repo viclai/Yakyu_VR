@@ -128,7 +128,8 @@ Declare_Any_Class("Shape",
             { superclass.prototype.populate.apply( this, arguments );  this.duplicate_the_shared_vertices();  this.flat_shade(); }
             } )( window[ this.class_name ] ),
           'duplicate_the_shared_vertices'()
-            { // Prepare an indexed shape for flat shading if it is not ready -- that is, if there are any edges where the same vertices are indexed by both the adjacent 
+            {
+              // Prepare an indexed shape for flat shading if it is not ready -- that is, if there are any edges where the same vertices are indexed by both the adjacent 
               // triangles, and those two triangles are not co-planar.  The two would therefore fight over assigning different normal vectors to the shared vertices.
               var temp_positions = [], temp_tex_coords = [], temp_indices = [];
               for( let [i, it] of this.indices.entries() )

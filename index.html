@@ -39,7 +39,8 @@
         var texture_files_to_load = [ // Put all texture images in the GPU.
           "text.png",
           "grass.jpg",
-          "stitching.jpg"
+          "stitching.jpg",
+          "helmet_paint.jpg"
         ];
         for (let f of texture_files_to_load) {
           contexts["main_canvas"].textures_in_use[f] = (new Texture(
@@ -100,7 +101,6 @@
     </script>
   </head>
   <body>
-    <span style="padding-left:20px;"></span><a href="?Baseball_Scene">Baseball Scene</a>
     <p>
       <canvas id="gl-canvas" width="800" height="600"></canvas>
     </p>

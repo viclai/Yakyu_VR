@@ -612,7 +612,7 @@ var sizeof = {
     'mat4' : new Float32Array( flatten(mat4()) ).byteLength
 };
 
-function inverse( m ) 
+function inverse(m) 
 {
   if ( !m.matrix )  { throw "attempt to invert non matrix"; }
   
@@ -648,7 +648,7 @@ function inverse( m )
 
 function identity() { return mat4(); }
   
-function mult_vec( M, v )
+function mult_vec(M, v)
   {
     v_4 = v.length == 4 ? v : vec4( v, 0 );
     v_new = vec4();
@@ -659,7 +659,7 @@ function mult_vec( M, v )
     return v_new;
   }
 
-function toMat3( mat4_affine )    // Slice off the 4th row and column of a matrix
+function toMat3(mat4_affine) // Slice off the 4th row and column of a matrix
 	{
 		var m = [];
 		m.push( mat4_affine[0].slice( 0, 3 ) );
@@ -669,9 +669,9 @@ function toMat3( mat4_affine )    // Slice off the 4th row and column of a matri
 		return m;
 	}
  
-function hermite_curve_point( a, b, da, db, t, epsilon = .0001 )    // Static function to generate one intermediate point (anywhere) along a curve you supply, based on 
-  {                                                                 // parameter t.  To specify the curve's location, supply endpoints a and b and tangents da and db. 
-    var curveMatrix = [b, a, db, da]; curveMatrix.matrix = true;    // The return value is not a position but an object, containing a position and a normal vector.
+function hermite_curve_point( a, b, da, db, t, epsilon = .0001 ) // Static function to generate one intermediate point (anywhere) along a curve you supply, based on 
+  {                                                              // parameter t. To specify the curve's location, supply endpoints a and b and tangents da and db. 
+    var curveMatrix = [b, a, db, da]; curveMatrix.matrix = true; // The return value is not a position but an object, containing a position and a normal vector.
     var hermiteMatrix = mat4( -2, 3, 0, 0,   2, -3, 0, 1,   1, -1, 0, 0,   1, -2, 1, 0 ),  t_next = t + epsilon,
     point1 = mult_vec( mult( transpose( curveMatrix ), hermiteMatrix ), vec4( t*t*t,                t*t,           t,      1 ) ), //Apply the hermite polynomial at time t to generate a point
     point2 = mult_vec( mult( transpose( curveMatrix ), hermiteMatrix ), vec4( t_next*t_next*t_next, t_next*t_next, t_next, 1 ) ); //Also generate another point slightly ahead of that

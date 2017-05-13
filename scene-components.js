@@ -15,11 +15,15 @@ Declare_Any_Class("Baseball_Scene",
     'construct'(context)
       {
         var shapes = {
-          "box"     : new Cube(), 
-          "ball"    : new Shape_From_File("resources/baseball.obj"),
-          "base"    : new Base(),
-          "sphere"  : new Subdivision_Sphere(5),
-          "diamond" : new Quarter_Circle_Diamond()
+          "box"         : new Cube(), 
+          "ball"        : new Shape_From_File("resources/baseball.obj"),
+          "base"        : new Base(),
+          "sphere"      : new Subdivision_Sphere(5),
+          "diamond"     : new Quarter_Circle_Diamond(),
+          "bat"         : new Shape_From_File("resources/bat.obj"),
+          "half_sphere" : new Half_Sphere(15, 15),
+          "helmet"      : new Shape_From_File("resources/helmet.obj"),
+          "tube"        : new Body_Tube(15, 15)
         };
         this.submit_shapes(context, shapes);
         
@@ -42,6 +46,27 @@ Declare_Any_Class("Baseball_Scene",
               Color(0, 0, 0, 1), 1, 1, 0, 40, 
               context.textures_in_use["grass.jpg"]
             ),
+          wood         :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(0, 0, 0, 1), 1, 1, 0, 40
+            ),
+          paint        :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(0, 0, 0, 1), 1, 1, 0, 40, 
+              context.textures_in_use["helmet_paint.jpg"]
+            ),
+          rubber       :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(1, 1, 0, 1), .5, 1, .7, 40
+            ),
+          cloth        :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(204/255, 204/255, 204/255, 1), .5, 1, .7, 40
+            ),
+          skin         :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(1, 214/255, 153/255, 1), .5, 1, .7, 40
+            )
         });
       },
     'display'(graphics_state)
@@ -115,49 +140,204 @@ Declare_Any_Class("Baseball_Scene",
 
         /*
          * Draws the baseball.
-         * @param {Object} oScene - The baseball scene.
+         * @param {Object} oScene   - The baseball scene.
+         * @param {Object} mSurface - The transformation matrix to the surface
+         *                            of the ground.
          */
         var draw_ball = function(oScene, mSurface) {
-          // TODO: Draw stitching
-          oScene.shapes.ball.draw(graphics_state, mult(mSurface, translation(0, 300, 10.9)), oScene.cork_stitch);
+          var pos = mult(mSurface, translation(0, 300, 10.9))
+          oScene.shapes.ball.draw(graphics_state, pos, oScene.cork_stitch);
         };
 
         /*
-         * Draws a baseball player.
-         * @param {Object} oScene - The baseball scene.
+         * Draws a baseball player as a better.
+         * @param {Object}   oScene   - The baseball scene.
+         * @param {Object[]} mSurface - The transformation matrix to the 
+         *                              surface of the ground.
+         * @param {Number}   iTime    - The scaled animation time.
          */
-        var draw_player = function(oScene) {
-          // TODO: Draw player
+        var draw_batter = function(oScene, mSurface, iTime) {
+          var body_top;
+          var head_top;
+          var helmet_center;
+          var head_dimensions = {
+            "length" : 2 * 4,
+            "width"  : 2 * 4,
+            "height" : 2 * 4
+          };
 
           /*
            * Draws the head of the player.
-           * @param {Object} oScene - The baseball scene.
+           * @param {Object}   oShape          - The Shape to draw.
+           * @param {Object}   oMaterial       - The material to use to color
+           *                                     the drawn shape.
+           * @param {Object[]} mBody           - The transformation matrix to
+           *                                     the top of the body.
+           * @param {Object}   oHeadDimensions - The dimensions of the head.
+           * @returns {Object[]} The transformation matrix for the center of
+           *                     the head.
            */
-          var draw_head = function() {
-
+          var draw_head = function(oShape, oMaterial, mBody, oHeadDimensions) {
+            var offset = -.35; // Extra offset to place the head nicely on the body
+            var center = mult(mBody, translation(
+              0,
+              0,
+              offset + oHeadDimensions.height / 2)
+            );
+            face = mult(center, scale(
+              oHeadDimensions.length / 2,
+              oHeadDimensions.width / 2,
+              oHeadDimensions.height / 2)
+            );
+            oShape.draw(graphics_state, face, oMaterial);
+            return center;
           };
 
           /*
            * Draws the body of the player.
-           * @param {Object} oScene - The baseball scene.
+           * @param {Object}   oScene   - The baseball scene.
+           * @param {Object[]} mSurface - The transformation matrix to the 
+           *                              surface of the ground.
+           * @param {Number}   iTime    - The scaled animation time.
+           * @returns {Object[]} The transformation matrix for the top of
+           *                     the body.
            */
-          var draw_body = function() {
-            var draw_arms = function() {
+          var draw_body = function(oScene, mSurface, iTime) {
+            var body;
+            var zScale = 8;
+            var bodyScale = 6;
+            var bodyTop = mult(mSurface, translation(-10, 125, 8 + (zScale * .2)));
+            var leftHinge;
+            var rightHinge;
+            var bat;
+            var rot1;
+            var rot2;
+            var swing;
 
+            /*
+             * Draws an arm of the player.
+             * @param {Object}   oScene - The baseball scene.
+             * @param {Object[]} mPos   - The transformation matrix to the
+             *                             position to draw the arm.
+             */
+            var draw_arm = function(oScene, mPos) {
+              var arm = mPos;
+              var armScale = 8;
+
+              /*
+               * Draw a hand (with the bat) of the player.
+               * @param {Object}   oScene   - The baseball scene.
+               * @param {Object[]} mPos     - The transformation matrix to the
+               *                              position to draw the hand.
+               */
+              var draw_hand = function(oScene, mPos) {
+                var hand_radius = 1;
+                var hand_center = mult(mPos, translation(0, 0, -hand_radius));
+                oScene.shapes.sphere.draw(graphics_state, hand_center, 
+                  oScene.skin);
+              };
+
+              draw_hand(oScene, mult(arm, translation(0, 0, -armScale * .5)));
+              arm = mult(arm, scale(1, 1, armScale));
+              oScene.shapes.tube.draw(graphics_state, arm, oScene.cloth);
             };
 
-            var draw_hands = function() {
+            // Draw main body
+            body = mult(mSurface, translation(-10, 125, 8));
+            body = mult(body, rotation(90, [0, 0, 1]));
+            body = mult(body, scale(bodyScale, bodyScale, zScale));
+            oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
 
-            };
+            swing = mult(bodyTop, rotation(.01 * iTime, [0, 0, 1]));
+            leftHinge = mult(swing, translation(0, -bodyScale * .25, 0));
+            rightHinge = mult(swing, translation(bodyScale * .25, 0, 0));
+
+            // Draw bat
+            bat = mult(leftHinge, translation(0, -.25*6, 0));
+            bat = mult(bat, translation(
+              8*0.5*Math.sin(radians(30)),
+              8*0.5*Math.sin(radians(-70)),
+              0)
+            );
+            bat = mult(bat, translation(-2, -1.5, -1.5));
+            bat = mult(bat, rotation(-45, [0, 0, 1]));
+            bat = mult(bat, rotation(180, [1, 0, 0]));
+            bat = mult(bat, scale(7, 7, 7));
+            oScene.shapes.bat.draw(graphics_state, bat, oScene.wood);
+
+            rot1 = mult(rotation(-70, [1, 0, 0]), rotation(-30, [0, 1, 0]));
+            draw_arm(oScene, mult(leftHinge, rot1));
+            rot2 = mult(rotation(-70, [1, 0, 0]), rotation(-25, [0, 1, 0]));
+            draw_arm(oScene, mult(rightHinge, rot2));
+
+            return bodyTop;
           };
 
           /*
            * Draws the shoes of the player.
-           * @param {Object} oScene - The baseball scene.
+           * @param {Object}   oShape    - The Shape to draw.
+           * @param {Object}   oMaterial - The material to use to color the
+           *                               drawn shape.
+           * @param {Object[]} mSurface  - The transformation matrix to the
+           *                               surface of the ground.
            */
-          var draw_shoes = function() {
+          var draw_shoes = function(oShape, oMaterial, mSurface) {
+            var shoe_dimensions = {
+              "length" : 2 * 4, // x
+              "width"  : 2 * 2, // y
+              "height" : 2      // z
+            };
+            var sizeShoe = scale(
+              shoe_dimensions.length / 2,
+              shoe_dimensions.width / 2,
+              shoe_dimensions.height
+            );
+            var pos = mult(mSurface, translation(-10, 120, 1));
+            var flipShoe = rotation(180, [1, 0, 0]);
 
+            flipShoe = mult(flipShoe, rotation(180, [0, 0, 1]));
+
+            // First shoe
+            pos = mult(pos, flipShoe);
+            pos = mult(pos, sizeShoe);
+            oShape.draw(graphics_state, pos, oMaterial);
+
+            // Second shoe
+            pos = mult(mSurface, translation(-10, 130, 1));
+            pos = mult(pos, flipShoe);
+            pos = mult(pos, sizeShoe);
+            oShape.draw(graphics_state, pos, oMaterial);
           };
+
+          draw_shoes(oScene.shapes.half_sphere, oScene.rubber, mSurface);
+          body_top = draw_body(oScene, mSurface, iTime);
+          head_center = draw_head(oScene.shapes.sphere, oScene.skin, body_top,
+            head_dimensions);
+
+          // Helmet
+          helmet_pos = mult(head_center, translation(
+            -.15 * head_dimensions.length / 2,
+            .1 * head_dimensions.width / 2,
+            .9 * head_dimensions.height / 2)
+          );
+          helmet_pos = mult(helmet_pos, rotation(165, [0, 0, 1]));
+          helmet_pos = mult(helmet_pos, scale(
+            head_dimensions.length / 2,
+            head_dimensions.width / 2,
+            head_dimensions.height / 2)
+          );
+          oScene.shapes.helmet.draw(graphics_state, helmet_pos, oScene.paint);
+        };
+
+        /*
+         * Draws a baseball player as a fielder.
+         * @param {Object}   oScene   - The baseball scene.
+         * @param {Object[]} mSurface - The transformation matrix to the 
+         *                              surface of the ground.
+         * @param {Number}   iTime    - The scaled animation time.
+         */
+        var draw_fielder = function(oScene, mSurface, iTime) {
+          
         };
 
         graphics_state.lights = [
@@ -165,9 +345,10 @@ Declare_Any_Class("Baseball_Scene",
           new Light(vec4(-10, -20, -14, 0), Color(1, 1, .3, 1), 100   )
         ];
         
-
         model_transform = draw_field(this);
         draw_ball(this, model_transform);
+        draw_batter(this, model_transform, t);
+
       }
   }, Scene_Component);
 
@@ -183,13 +364,13 @@ Declare_Any_Class("Debug_Screen",
       {
         this.define_data_members({
           string_map:    context.globals.string_map, start_index: 0, tick: 0, visible: false, graphics_state: new Graphics_State(),
-          text_material: context.shaders_in_use["Phong_Model"].material(Color(  0, 0, 0, 1 ), 1, 0, 0, 40, context.textures_in_use["text.png"])
+          text_material: context.shaders_in_use["Phong_Model"].material(Color(0, 0, 0, 1), 1, 0, 0, 40, context.textures_in_use["text.png"])
         });
         var shapes = {
           'debug_text': new Text_Line(35),
           'cube'      : new Cube()
         };
-        this.submit_shapes( context, shapes );
+        this.submit_shapes(context, shapes);
       },
     'init_keys'(controls)
       {
@@ -208,22 +389,22 @@ Declare_Any_Class("Debug_Screen",
       {
         if (!this.visible)
           return;
-        var font_scale = scale( .02, .04, 1 ),
-            model_transform = mult( translation( -.95, -.9, 0 ), font_scale ),
-            strings = Object.keys( this.string_map );
+        var font_scale = scale(.02, .04, 1),
+            model_transform = mult(translation(-.95, -.9, 0), font_scale),
+            strings = Object.keys(this.string_map);
   
         for (var i = 0, idx = this.start_index; i < 4 && i < strings.length; i++, idx = (idx + 1) % strings.length) {
-          this.shapes.debug_text.set_string( this.string_map[ strings[idx] ] );
+          this.shapes.debug_text.set_string(this.string_map[strings[idx]]);
           this.shapes.debug_text.draw( this.graphics_state, model_transform, this.text_material ); // Draw some UI text (each live-updated 
-          model_transform = mult( translation( 0, .08, 0 ), model_transform );                     // logged value in each Scene_Component)
+          model_transform = mult(translation(0, .08, 0), model_transform);                         // logged value in each Scene_Component)
         }
-        model_transform   = mult( translation( .7, .9, 0 ), font_scale);
+        model_transform   = mult(translation(.7, .9, 0), font_scale);
         this.  shapes.debug_text.set_string("Controls:");
-        this.  shapes.debug_text.draw( this.graphics_state, model_transform, this.text_material); // Draw some UI text
+        this.  shapes.debug_text.draw(this.graphics_state, model_transform, this.text_material); // Draw some UI text
 
         for (let k of Object.keys(this.controls.all_shortcuts)) {
-          model_transform = mult( translation( 0, -0.08, 0 ), model_transform );
-          this.shapes.debug_text.set_string( k );
+          model_transform = mult(translation(0, -0.08, 0), model_transform);
+          this.shapes.debug_text.set_string(k);
           this.shapes.debug_text.draw(this.graphics_state, model_transform, this.text_material); // Draw some UI text (the canvas's key controls)
         }
       }
@@ -232,12 +413,12 @@ Declare_Any_Class("Debug_Screen",
 // An example of a Scene_Component that our Canvas_Manager can manage. Adds 
 // both first-person and third-person style camera matrix controls to the 
 // canvas.
-Declare_Any_Class("Example_Camera",                  
+Declare_Any_Class("Example_Camera",
   {
     'construct'(context, canvas = context.canvas)
       { // 1st parameter below is our starting camera matrix. 2nd is the projection: The matrix that determines how depth is treated. It projects 3D points onto a plane.
         context.globals.graphics_state.set(
-          lookAt([0, 55, 32], [0, 70, 30], [0, 0, 1]),
+          lookAt([-.6, 81, 15], [0, 90, 15], [0, 0, 1]),
           perspective(45, context.width/context.height, .1, 1000),
           0
         );
@@ -294,7 +475,7 @@ Declare_Any_Class("Example_Camera",
         //controls.add(",",     this, function() { this.graphics_state.camera_transform = mult( rotation( 6, 0, 0,  1 ), this.graphics_state.camera_transform ); } );
         //controls.add(".",     this, function() { this.graphics_state.camera_transform = mult( rotation( 6, 0, 0, -1 ), this.graphics_state.camera_transform ); } );
         controls.add("o",     this, function() { this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3); });
-        controls.add("r",     this, function() { this.graphics_state.camera_transform = lookAt([0, 55, 32], [0, 70, 30], [0, 0, 1]); });
+        controls.add("r",     this, function() { this.graphics_state.camera_transform = lookAt([-.6, 81, 15], [0, 90, 15], [0, 0, 1]); });
         //controls.add("f",     this, function() { this.looking  ^=  1; });
       },
     'update_strings'(user_interface_string_manager) // Strings that this Scene_Component contributes to the UI:
