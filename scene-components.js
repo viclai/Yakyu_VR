@@ -23,11 +23,15 @@ Declare_Any_Class("Baseball_Scene",
           "bat"         : new Shape_From_File("resources/bat.obj"),
           "half_sphere" : new Half_Sphere(15, 15),
           "helmet"      : new Shape_From_File("resources/helmet.obj"),
-          "tube"        : new Body_Tube(15, 15)
+          "tube"        : new Body_Tube(15, 15),
+          "cap"         : new Shape_From_File("resources/cap.obj"),
+          "mitt"        : new Shape_From_File("resources/glove.obj"),
+          "square"      : new Square()
         };
         this.submit_shapes(context, shapes);
         
         this.define_data_members({
+          // Materials
           cork_stitch  :
             context.shaders_in_use["Phong_Model"].material(
               Color(0, 0, 0, 1), 1, 1,  0, 40,
@@ -65,8 +69,24 @@ Declare_Any_Class("Baseball_Scene",
             ),
           skin         :
             context.shaders_in_use["Phong_Model"].material(
-              Color(1, 214/255, 153/255, 1), .5, 1, .7, 40
+              Color(204/255, 153/255, 0, 1), .5, 1, .7, 40
+            ),
+          wool         :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(0, 0, 1, 1), .5, 1, .7, 40
+            ),
+          leather      :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(0, 0, 0, 1), 1, 1, 0, 40, 
+              context.textures_in_use["glove_leather.jpg"]
+            ),
+          chalk        :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(1, 1, 1, 1), 1, 1, .7, 40
             )
+
+          // Miscellaneous
+
         });
       },
     'display'(graphics_state)
@@ -92,8 +112,9 @@ Declare_Any_Class("Baseball_Scene",
           var ground;
           var ground_center = identity();
           var surface = mult(ground_center, translation(0, 0, 1));
-          var partial_sphere = mult(surface, translation(0, 300, 0));
+          var partial_sphere = mult(surface, translation(1.5, 300, -4));
           var infield = mult(surface, translation(0, 50, 1.0001));
+          var chalk;
           var offset;
           var tile;
           var i;
@@ -128,25 +149,28 @@ Declare_Any_Class("Baseball_Scene",
           }
 
           // Draw pitcher's mound
-          partial_sphere = mult(partial_sphere, scale(25,25,10));
+          partial_sphere = mult(partial_sphere, scale(30,30,10));
           oScene.shapes.ball.draw(graphics_state, partial_sphere, oScene.infield_dirt);
 
           // Draw baseball diamond
           infield = mult(infield, rotation(45, [0,0,1]));
           infield = mult(infield, scale(500, 500, 1));
           oScene.shapes.diamond.draw(graphics_state, infield, oScene.infield_dirt);
-          return surface;
-        };
 
-        /*
-         * Draws the baseball.
-         * @param {Object} oScene   - The baseball scene.
-         * @param {Object} mSurface - The transformation matrix to the surface
-         *                            of the ground.
-         */
-        var draw_ball = function(oScene, mSurface) {
-          var pos = mult(mSurface, translation(0, 300, 10.9))
-          oScene.shapes.ball.draw(graphics_state, pos, oScene.cork_stitch);
+          // Draw baseline
+          chalk = mult(surface, translation(-17, 160, 1.005));
+          chalk = mult(chalk, rotation(-45, [0, 0, 1]));
+          chalk = mult(chalk, translation(-300, 0, 0));
+          chalk = mult(chalk, scale(300, 1, 1));
+          oScene.shapes.square.draw(graphics_state, chalk, oScene.chalk);
+
+          chalk = mult(surface, translation(17, 160, 1.005));
+          chalk = mult(chalk, rotation(45, [0, 0, 1]));
+          chalk = mult(chalk, translation(300, 0, 0));
+          chalk = mult(chalk, scale(300, 1, 1));
+          oScene.shapes.square.draw(graphics_state, chalk, oScene.chalk);
+
+          return surface;
         };
 
         /*
@@ -225,10 +249,10 @@ Declare_Any_Class("Baseball_Scene",
               var armScale = 8;
 
               /*
-               * Draw a hand (with the bat) of the player.
-               * @param {Object}   oScene   - The baseball scene.
-               * @param {Object[]} mPos     - The transformation matrix to the
-               *                              position to draw the hand.
+               * Draw a hand of the player.
+               * @param {Object}   oScene - The baseball scene.
+               * @param {Object[]} mPos   - The transformation matrix to the
+               *                            position to draw the hand.
                */
               var draw_hand = function(oScene, mPos) {
                 var hand_radius = 1;
@@ -337,7 +361,205 @@ Declare_Any_Class("Baseball_Scene",
          * @param {Number}   iTime    - The scaled animation time.
          */
         var draw_fielder = function(oScene, mSurface, iTime) {
-          
+          var body_top;
+          var head_center;
+          var head_dimensions = {
+            "length" : 2 * 4,
+            "width"  : 2 * 4,
+            "height" : 2 * 4
+          };
+          var cap_pos;
+
+          /*
+           * Draws the head of the player.
+           * @param {Object}   oShape          - The Shape to draw.
+           * @param {Object}   oMaterial       - The material to use to color
+           *                                     the drawn shape.
+           * @param {Object[]} mBody           - The transformation matrix to
+           *                                     the top of the body.
+           * @param {Object}   oHeadDimensions - The dimensions of the head.
+           * @returns {Object[]} The transformation matrix for the center of
+           *                     the head.
+           */
+          var draw_head = function(oShape, oMaterial, mBody, oHeadDimensions) {
+            var offset = -.35; // Extra offset to place the head nicely on the body
+            var center = mult(mBody, translation(
+              0,
+              0,
+              offset + oHeadDimensions.height / 2)
+            );
+            face = mult(center, scale(
+              oHeadDimensions.length / 2,
+              oHeadDimensions.width / 2,
+              oHeadDimensions.height / 2)
+            );
+            oShape.draw(graphics_state, face, oMaterial);
+            return center;
+          };
+
+          /*
+           * Draws the body of the player.
+           * @param {Object}   oScene   - The baseball scene.
+           * @param {Object[]} mSurface - The transformation matrix to the 
+           *                              surface of the ground.
+           * @param {Number}   iTime    - The scaled animation time.
+           * @returns {Object[]} The transformation matrix for the top of
+           *                     the body.
+           */
+          var draw_body = function(oScene, mSurface, iTime) {
+            var body;
+            var zScale = 8;
+            var bodyScale = 6;
+            var bodyTop = mult(mSurface, translation(1.5, 295, 12 + (zScale * .2)));
+            var leftHinge;
+            var rightHinge;
+            var rot1;
+            var rot2;
+            var glove;
+            var throwMotion;
+            var gloveMotion;
+            var rotAngle;
+
+            /*
+             * Draws an arm of the player.
+             * @param {Object}   oScene  - The baseball scene.
+             * @param {Object[]} mPos    - The transformation matrix to the
+             *                             position to draw the arm.
+             * @param {boolean}  bIsLeft - The hand to draw is the left.
+             */
+            var draw_arm = function(oScene, mPos, bIsLeft, iTime) {
+              var arm = mPos;
+              var armScale = 8;
+
+              /*
+               * Draw a hand (with baseball) of the player.
+               * @param {Object}   oScene  - The baseball scene.
+               * @param {Object[]} mPos    - The transformation matrix to the
+               *                             position to draw the hand.
+               */
+              var draw_hand = function(oScene, mPos, iTime) {
+                var hand_radius = 1;
+                var hand_center = mult(mPos, translation(0, 0, -hand_radius));
+                var ball_transform;
+
+                oScene.shapes.sphere.draw(graphics_state, hand_center,
+                  oScene.skin);
+
+                if (.05 * iTime < 90) {
+                  ball_transform = mult(hand_center, translation(
+                    0,
+                    -(hand_radius + .2),
+                    0)
+                  );
+                }
+                else {
+                  ball_transform = translation(-4.47, 292.27 - (iTime * .01), 17.33 - (iTime * .0005));
+                  ball_transform = mult(ball_transform, rotation(.5 * iTime, [1, 0, 0]));
+                }
+                ball_transform = mult(ball_transform, scale(.75, .75, .75));
+
+                oScene.shapes.ball.draw(
+                  graphics_state,
+                  ball_transform,
+                  oScene.cork_stitch
+                );
+              };
+
+              if (!bIsLeft)
+                draw_hand(oScene, mult(arm, translation(0, 0, -armScale * .5)), iTime);
+              arm = mult(arm, scale(1, 1, armScale));
+              oScene.shapes.tube.draw(graphics_state, arm, oScene.cloth);
+            };
+
+            // Draw main body
+            body = mult(mSurface, translation(1.5, 295, 12));
+            body = mult(body, rotation(90, [0, 0, 1]));
+            body = mult(body, scale(bodyScale, bodyScale, zScale));
+            oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
+
+            rotAngle = .05 * iTime;
+            if (rotAngle >= 90)
+              rotAngle = 90;
+            throwMotion = mult(bodyTop, rotation(rotAngle, [1, 0, 0]));
+
+            rotAngle = (.05 * iTime);
+            if (rotAngle >= 90)
+              rotAngle = 90;
+            gloveMotion = mult(bodyTop, rotation(rotAngle, [0, 0, 1]));
+
+            leftHinge = mult(gloveMotion, translation(-.2 * bodyScale, -bodyScale * .25, 0));
+            rightHinge = mult(throwMotion, translation((-bodyScale * .25) /*- (.2 * bodyScale)*/, 0, 0));
+
+            // Draw mitt (glove)
+            glove = mult(leftHinge, translation((-bodyScale * 0.7)-2, -1, 0));
+            glove = mult(glove, mult(rotation(-180, [0, 1, 0]), rotation(-90, [0, 0, 1])));
+            glove = mult(glove, rotation(-90, [0,1,0]));
+            glove = mult(glove, scale(1.5, 1.5, 1.5));
+            oScene.shapes.mitt.draw(graphics_state, glove, oScene.leather);
+
+            rot1 = rotation(90, [0, 1, 0]);
+            draw_arm(oScene, mult(leftHinge, rot1), true, iTime);
+            rot2 = mult(rotation(90, [0, 1, 0]), rotation(45, [1, 0, 0]));
+            draw_arm(oScene, mult(rightHinge, rot2), false, iTime);
+
+            return bodyTop;
+          };
+
+          /*
+           * Draws the shoes of the player.
+           * @param {Object}   oShape    - The Shape to draw.
+           * @param {Object}   oMaterial - The material to use to color the
+           *                               drawn shape.
+           * @param {Object[]} mSurface  - The transformation matrix to the
+           *                               surface of the ground.
+           */
+          var draw_shoes = function(oShape, oMaterial, mSurface) {
+            var shoe_dimensions = {
+              "length" : 2 * 4, // x
+              "width"  : 2 * 2, // y
+              "height" : 2      // z
+            };
+            var sizeShoe = scale(
+              shoe_dimensions.length / 2,
+              shoe_dimensions.width / 2,
+              shoe_dimensions.height
+            );
+            var pos = mult(mSurface, translation(1.5, 290, 5.5));
+            var flipShoe = rotation(180, [1, 0, 0]);
+
+            flipShoe = mult(flipShoe, rotation(180, [0, 0, 1]));
+
+            // First shoe
+            pos = mult(pos, flipShoe);
+            pos = mult(pos, sizeShoe);
+            oShape.draw(graphics_state, pos, oMaterial);
+
+            // Second shoe
+            pos = mult(mSurface, translation(1.5, 300, 6));
+            pos = mult(pos, flipShoe);
+            pos = mult(pos, sizeShoe);
+            oShape.draw(graphics_state, pos, oMaterial);
+          };
+
+          draw_shoes(oScene.shapes.half_sphere, oScene.rubber, mSurface);
+          body_top = draw_body(oScene, mSurface, iTime);
+          head_center = draw_head(oScene.shapes.sphere, oScene.skin, body_top,
+            head_dimensions);
+
+          // Cap
+          cap_pos = mult(head_center, translation(
+            -.01 * head_dimensions.length / 2,
+            -.09 * head_dimensions.width / 2,
+            .7 * head_dimensions.height / 2)
+          );
+          cap_pos = mult(cap_pos, rotation(90, [1, 0, 0]));
+          cap_pos = mult(cap_pos, rotation(-90, [0, 1, 0]));
+          cap_pos = mult(cap_pos, scale(
+            head_dimensions.length / 2,
+            head_dimensions.width / 2,
+            head_dimensions.height / 2)
+          );
+          oScene.shapes.cap.draw(graphics_state, cap_pos, oScene.wool);
         };
 
         graphics_state.lights = [
@@ -346,9 +568,8 @@ Declare_Any_Class("Baseball_Scene",
         ];
         
         model_transform = draw_field(this);
-        draw_ball(this, model_transform);
         draw_batter(this, model_transform, t);
-
+        draw_fielder(this, model_transform, t);
       }
   }, Scene_Component);
 
@@ -418,7 +639,7 @@ Declare_Any_Class("Example_Camera",
     'construct'(context, canvas = context.canvas)
       { // 1st parameter below is our starting camera matrix. 2nd is the projection: The matrix that determines how depth is treated. It projects 3D points onto a plane.
         context.globals.graphics_state.set(
-          lookAt([-.6, 81, 15], [0, 90, 15], [0, 0, 1]),
+          lookAt([4.6, 339, 15], [0, 260, 15], [0, 0, 1]),
           perspective(45, context.width/context.height, .1, 1000),
           0
         );
@@ -460,6 +681,7 @@ Declare_Any_Class("Example_Camera",
       },
     'init_keys'(controls) // init_keys(): Define any extra keyboard shortcuts here
       {
+        // Remove these later!
         controls.add("Space", this, function() { this.thrust[1] = -1; });
         controls.add("Space", this, function() { this.thrust[1] =  0; }, {'type':'keyup'});
         controls.add("z",     this, function() { this.thrust[1] =  1; });
@@ -472,11 +694,44 @@ Declare_Any_Class("Example_Camera",
         controls.add("s",     this, function() { this.thrust[2] =  0; }, {'type':'keyup'});
         controls.add("d",     this, function() { this.thrust[0] = -1; } );
         controls.add("d",     this, function() { this.thrust[0] =  0; }, {'type':'keyup'});
-        //controls.add(",",     this, function() { this.graphics_state.camera_transform = mult( rotation( 6, 0, 0,  1 ), this.graphics_state.camera_transform ); } );
-        //controls.add(".",     this, function() { this.graphics_state.camera_transform = mult( rotation( 6, 0, 0, -1 ), this.graphics_state.camera_transform ); } );
-        controls.add("o",     this, function() { this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3); });
-        controls.add("r",     this, function() { this.graphics_state.camera_transform = lookAt([-.6, 81, 15], [0, 90, 15], [0, 0, 1]); });
-        //controls.add("f",     this, function() { this.looking  ^=  1; });
+
+        controls.add("o", this, function() {
+          this.origin = mult_vec(
+            inverse(this.graphics_state.camera_transform),
+            vec4(0,0,0,1)
+          ).slice(0,3);
+        });
+        controls.add("p", this, function() {
+          this.graphics_state.camera_transform = lookAt(
+            [4.6, 339, 15], [0, 260, 15], [0, 0, 1]
+          );
+        });
+
+        controls.add("h", this, function() {
+          this.graphics_state.camera_transform = lookAt(
+            [-.6, 81, 15], [0, 90, 15], [0, 0, 1]
+          );
+        });
+        controls.add("3", this, function() {
+          this.graphics_state.camera_transform = lookAt(
+            [-193, 372, 15], [-.6, 81, 15], [0, 0, 1]
+          );
+        });
+        controls.add("1", this, function() {
+          this.graphics_state.camera_transform = lookAt(
+            [190, 379, 15], [-.6, 81, 15], [0, 0, 1]
+          );
+        });
+        controls.add("2", this, function() {
+          this.graphics_state.camera_transform = lookAt(
+            [127, 485, 15], [-.6, 81, 15], [0, 0, 1]
+          );
+        });
+        controls.add("m", this, function() {
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1]
+          );
+        });
       },
     'update_strings'(user_interface_string_manager) // Strings that this Scene_Component contributes to the UI:
       {
