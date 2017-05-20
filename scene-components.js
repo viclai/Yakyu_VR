@@ -27,7 +27,9 @@ Declare_Any_Class("Baseball_Scene",
           "cap"         : new Shape_From_File("resources/cap.obj"),
           "mitt"        : new Shape_From_File("resources/glove.obj"),
           "square"      : new Square(),
-          "sqhole"       : new Square_Hole()
+          "sqhole"      : new Square_Hole(),
+          "cylinder"    : new Rounded_Capped_Cylinder(20, 20),
+          "fence"       : new Fence(20, 20)
         };
         this.submit_shapes(context, shapes);
         
@@ -55,7 +57,7 @@ Declare_Any_Class("Baseball_Scene",
             context.shaders_in_use["Phong_Model"].material(
               Color(0, 0, 0, 1), 1, 1, 0, 40
             ),
-          paint        :
+          helmet_paint :
             context.shaders_in_use["Phong_Model"].material(
               Color(0, 0, 0, 1), 1, 1, 0, 40, 
               context.textures_in_use["helmet_paint.jpg"]
@@ -90,16 +92,91 @@ Declare_Any_Class("Baseball_Scene",
               Color(0, 0, 0, 1), 1, 1, 0, 40, 
               context.textures_in_use["chain.jpg"]
             ),
+          yellow_paint :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(1, 1, 0, 1), .5, 1, .7, 40
+            ),
 
           // Miscellaneous
           hit : false,
-          velocity : 1
+          velocity : 1,
+          ball_location : [0, 0, 0],
+          ball_camera: false,
+          graphics_state : context.globals.graphics_state
+        });
+      },
+    'init_keys'(controls)
+      {
+        controls.add("b", this, function() { // Follow ball
+          this.ball_camera = true;
+        });
+
+        controls.add("p", this, function() { // Pitcher's mound
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [4.6, 339, 15], [0, 260, 15], [0, 0, 1]
+          );
+        });
+        controls.add("h", this, function() { // Home plate
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [-.6, 81, 15], [0, 90, 15], [0, 0, 1]
+          );
+        });
+        controls.add("3", this, function() { // 3rd base
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [-193, 372, 15], [-.6, 81, 15], [0, 0, 1]
+          );
+        });
+        controls.add("1", this, function() { // 1st base
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [190, 379, 15], [-.6, 81, 15], [0, 0, 1]
+          );
+        });
+        controls.add("2", this, function() { // 2nd base
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [127, 485, 15], [-.6, 81, 15], [0, 0, 1]
+          );
+        });
+        /*controls.add("s", this, function() { // Shortstop
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+          );
+        });*/
+        /*controls.add("l", this, function() { // Left field
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+          );
+        });*/
+        /*controls.add("c", this, function() { // Center field
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+          );
+        });*/
+        /*controls.add("r", this, function() { // Right field
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+          );
+        });*/
+        controls.add("m", this, function() { // TODO: Remove later!
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1]
+          );
         });
       },
     'display'(graphics_state)
       {
         var model_transform = identity();
         var t = graphics_state.animation_time;
+        var ball_pos;
 
         /*
          * Draws the baseball field.
@@ -127,9 +204,10 @@ Declare_Any_Class("Baseball_Scene",
           var j;
           var cols = 20;
           var rows = 20;
-          var gate_start = mult(surface, translation(0, 40, 0));
+          var gate_start = mult(surface, translation(0, 45, 1.3));
           var transform;
           var gate_transform;
+          var pole;
 
           // Draw grass
           for (i = 0; i < tile_dimensions.length * tilesX; i += tile_dimensions.length) {
@@ -169,112 +247,44 @@ Declare_Any_Class("Baseball_Scene",
           infield = mult(infield, scale(500, 500, 1));
           oScene.shapes.diamond.draw(graphics_state, infield, oScene.infield_dirt);
 
-          // Draw baseline
-          chalk = mult(surface, translation(-17, 160, 1.005));
+          // Draw baseline and foul poles
+          chalk = mult(surface, translation(-17, 160, .1));
           chalk = mult(chalk, rotation(-45, [0, 0, 1]));
-          chalk = mult(chalk, translation(-300, 0, 0));
-          chalk = mult(chalk, scale(300, 1, 1));
-          oScene.shapes.square.draw(graphics_state, chalk, oScene.chalk);
+          pole = chalk;
+          chalk = mult(chalk, translation(-500, 0, 0));
+          chalk = mult(chalk, scale(500, 1, 1));
+          oScene.shapes.box.draw(graphics_state, chalk, oScene.chalk);
+          pole = mult(pole, translation(-1000, 0, 0));
+          pole = mult(pole, scale(5, 5, 500));
+          oScene.shapes.cylinder.draw(graphics_state, pole, oScene.yellow_paint);
 
-          chalk = mult(surface, translation(17, 160, 1.005));
+          chalk = mult(surface, translation(17, 160, .1));
           chalk = mult(chalk, rotation(45, [0, 0, 1]));
-          chalk = mult(chalk, translation(300, 0, 0));
-          chalk = mult(chalk, scale(300, 1, 1));
-          oScene.shapes.square.draw(graphics_state, chalk, oScene.chalk);
+          pole = chalk;
+          chalk = mult(chalk, translation(500, 0, 0));
+          chalk = mult(chalk, scale(500, 1, 1));
+          oScene.shapes.box.draw(graphics_state, chalk, oScene.chalk);
+          pole = mult(pole, translation(1000, 0, 0));
+          pole = mult(pole, scale(5, 5, 500));
+          oScene.shapes.cylinder.draw(graphics_state, pole, oScene.yellow_paint);
 
           // Draw backstop
-          /* Front */
-          for (j = 0; j < rows; j += 2) {
-            gate_transform = mult(gate_start, translation(0, 0, (2 * j) * Math.sin(radians(45))));
-            gate_transform = mult(gate_transform, scale(.05, .05, 2 * Math.sin(radians(45))));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-          }
+          gate_transform = mult(gate_start, translation(0, 0, 25));
+          gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
+          gate_transform = mult(gate_transform, scale(20, 1, 20));
+          oScene.shapes.fence.draw(graphics_state, gate_transform, oScene.chain);
+          
+          gate_transform = mult(gate_start, translation(63 * Math.cos(radians(45)), 25 * Math.sin(radians(45)), 25));
+          gate_transform = mult(gate_transform, rotation(45, [0, 0, 1]));
+          gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
+          gate_transform = mult(gate_transform, scale(20, 1, 20));
+          oScene.shapes.fence.draw(graphics_state, gate_transform, oScene.chain);
 
-          for (i = 1; i < cols; i += 2) {
-            gate_transform = mult(gate_start, translation((2 * i) * Math.cos(radians(45)) + .05, 0, -(2 * Math.sin(radians(45)))));
-            gate_transform = mult(gate_transform, scale(2 * Math.sin(radians(45)), .05, .05));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-
-            for (j = 0; j < rows; j += 2) {
-              gate_transform = mult(gate_start, translation((i * 2 * Math.cos(radians(45))) + .05, 0, j * 2 * Math.sin(radians(45))));
-              gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
-              gate_transform = mult(gate_transform, scale(1, .5, 1));
-              oScene.shapes.sqhole.draw(graphics_state, gate_transform, oScene.chain);
-            }
-            gate_transform = mult(gate_start, translation(i * 2 * Math.cos(radians(45)), 0, (((2 * j) - 2) * Math.sin(radians(45))) + .05));
-            gate_transform = mult(gate_transform, scale(2 * Math.cos(radians(45)), .05, .05));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-          }
-
-          for (j = 0; j < rows; j += 2) {
-            gate_transform = mult(gate_start, translation((((2 * i) - 2) * Math.cos(radians(45))) + .05, 0, (2 * j) * Math.sin(radians(45))));
-            gate_transform = mult(gate_transform, scale(.05, .05, 2 * Math.sin(radians(45))));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-          }
-
-          /* Right */
-          transform = mult(gate_start, translation((((2 * i) - 2) * Math.cos(radians(45))) + .05 + (.1 * Math.cos(radians(45))), .1 * Math.sin(radians(45)), 0));
-          transform = mult(transform, rotation(45, [0, 0, 1]));
-
-          for (j = 0; j < rows; j += 2) {
-            gate_transform = mult(transform, translation(0, 0, (2 * j) * Math.sin(radians(45))));
-            gate_transform = mult(gate_transform, scale(.05, .05, 2 * Math.sin(radians(45))));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-          }
-
-          for (i = 1; i < cols; i += 2) {
-            gate_transform = mult(transform, translation((2 * i) * Math.cos(radians(45)) + .05, 0, -(2 * Math.sin(radians(45)))));
-            gate_transform = mult(gate_transform, scale(2 * Math.sin(radians(45)), .05, .05));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-
-            for (j = 0; j < rows; j += 2) {
-              gate_transform = mult(transform, translation((i * 2 * Math.cos(radians(45))) + .05, 0, j * 2 * Math.sin(radians(45))));
-              gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
-              gate_transform = mult(gate_transform, scale(1, .5, 1));
-              oScene.shapes.sqhole.draw(graphics_state, gate_transform, oScene.chain);
-            }
-            gate_transform = mult(transform, translation(i * 2 * Math.cos(radians(45)), 0, (((2 * j) - 2) * Math.sin(radians(45))) + .05));
-            gate_transform = mult(gate_transform, scale(2 * Math.cos(radians(45)), .05, .05));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-          }
-
-          for (j = 0; j < rows; j += 2) {
-            gate_transform = mult(transform, translation((((2 * i) - 2) * Math.cos(radians(45))) + .05, 0, (2 * j) * Math.sin(radians(45))));
-            gate_transform = mult(gate_transform, scale(.05, .05, 2 * Math.sin(radians(45))));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-          }
-
-          /* Left */
-          transform = mult(gate_start, translation(-.05 - (.1 * Math.cos(radians(45))), .1 * Math.sin(radians(45)), 0));
-          transform = mult(transform, rotation(-45, [0, 0, 1]));
-
-          for (j = 0; j < rows; j += 2) {
-            gate_transform = mult(transform, translation(0, 0, (2 * j) * Math.sin(radians(45))));
-            gate_transform = mult(gate_transform, scale(.05, .05, 2 * Math.sin(radians(45))));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-          }
-
-          for (i = 1; i < cols; i += 2) {
-            gate_transform = mult(transform, translation((-2 * i) * Math.cos(radians(45)) - .05, 0, -(2 * Math.sin(radians(45)))));
-            gate_transform = mult(gate_transform, scale(2 * Math.sin(radians(45)), .05, .05));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-
-            for (j = 0; j < rows; j += 2) {
-              gate_transform = mult(transform, translation((-i * 2 * Math.cos(radians(45))) - .05, 0, j * 2 * Math.sin(radians(45))));
-              gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
-              gate_transform = mult(gate_transform, scale(1, .5, 1));
-              oScene.shapes.sqhole.draw(graphics_state, gate_transform, oScene.chain);
-            }
-            gate_transform = mult(transform, translation(-i * 2 * Math.cos(radians(45)), 0, (((2 * j) - 2) * Math.sin(radians(45))) + .05));
-            gate_transform = mult(gate_transform, scale(2 * Math.cos(radians(45)), .05, .05));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-          }
-
-          for (j = 0; j < rows; j += 2) {
-            gate_transform = mult(transform, translation(-(((2 * i) - 2) * Math.cos(radians(45))) - .05, 0, (2 * j) * Math.sin(radians(45))));
-            gate_transform = mult(gate_transform, scale(.05, .05, 2 * Math.sin(radians(45))));
-            oScene.shapes.box.draw(graphics_state, gate_transform, oScene.chain);
-          }
+          gate_transform = mult(gate_start, translation(-63 * Math.cos(radians(45)), 25 * Math.sin(radians(45)), 25));
+          gate_transform = mult(gate_transform, rotation(-45, [0, 0, 1]));
+          gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
+          gate_transform = mult(gate_transform, scale(20, 1, 20));
+          oScene.shapes.fence.draw(graphics_state, gate_transform, oScene.chain);
 
           return surface;
         };
@@ -343,6 +353,7 @@ Declare_Any_Class("Baseball_Scene",
             var rot1;
             var rot2;
             var swing;
+            var rotAngle;
 
             /*
              * Draws an arm of the player.
@@ -378,7 +389,10 @@ Declare_Any_Class("Baseball_Scene",
             body = mult(body, scale(bodyScale, bodyScale, zScale));
             oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
 
-            swing = mult(bodyTop, rotation(.01 * iTime, [0, 0, 1]));
+            rotAngle = .01 * iTime;
+            if (rotAngle >= 180)
+              rotAngle = 180;
+            swing = mult(bodyTop, rotation(rotAngle, [0, 0, 1]));
             leftHinge = mult(swing, translation(0, -bodyScale * .25, 0));
             rightHinge = mult(swing, translation(bodyScale * .25, 0, 0));
 
@@ -456,7 +470,7 @@ Declare_Any_Class("Baseball_Scene",
             head_dimensions.width / 2,
             head_dimensions.height / 2)
           );
-          oScene.shapes.helmet.draw(graphics_state, helmet_pos, oScene.paint);
+          oScene.shapes.helmet.draw(graphics_state, helmet_pos, oScene.helmet_paint);
         };
 
         /*
@@ -571,6 +585,7 @@ Declare_Any_Class("Baseball_Scene",
                   }
                 }
                 ball_transform = mult(ball_transform, scale(.75, .75, .75));
+                oScene.ball_location = mult_vec(ball_transform, vec4(0, 0, 0, 1));
 
                 oScene.shapes.ball.draw(
                   graphics_state,
@@ -592,8 +607,8 @@ Declare_Any_Class("Baseball_Scene",
             oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
 
             rotAngle = .05 * iTime;
-            if (rotAngle >= 90)
-              rotAngle = 90;
+            if (rotAngle >= 135)
+              rotAngle = 135;
             throwMotion = mult(bodyTop, rotation(rotAngle, [1, 0, 0]));
 
             rotAngle = (.05 * iTime);
@@ -677,13 +692,19 @@ Declare_Any_Class("Baseball_Scene",
         };
 
         graphics_state.lights = [
-          new Light(vec4( 30,  30,  34, 1), Color(0, .4, 0, 1), 100000),
-          new Light(vec4(-10, -20, -14, 0), Color(1, 1, .3, 1), 100   )
+          new Light(vec4(0, 500, 1000, 1), Color(1, 1, 1, 1), 900000)
         ];
         
         model_transform = draw_field(this);
         draw_batter(this, model_transform, t);
         draw_fielder(this, model_transform, t);
+
+        if (this.ball_camera) {
+          ball_pos = this.ball_location;
+          this.graphics_state.camera_transform = lookAt(
+            [ball_pos[0], ball_pos[1] - 20, ball_pos[2]], [ball_pos[0], ball_pos[1], ball_pos[2]], [0, 0, 1]
+          );
+        }
       }
   }, Scene_Component);
 
@@ -745,10 +766,7 @@ Declare_Any_Class("Debug_Screen",
       }
   }, Scene_Component);
 
-// An example of a Scene_Component that our Canvas_Manager can manage. Adds 
-// both first-person and third-person style camera matrix controls to the 
-// canvas.
-Declare_Any_Class("Example_Camera",
+Declare_Any_Class("Camera",
   {
     'construct'(context, canvas = context.canvas)
       { // 1st parameter below is our starting camera matrix. 2nd is the projection: The matrix that determines how depth is treated. It projects 3D points onto a plane.
@@ -815,12 +833,12 @@ Declare_Any_Class("Example_Camera",
             vec4(0,0,0,1)
           ).slice(0,3);
         });
-        controls.add("p", this, function() {
+
+        controls.add("p", this, function() { // Pitcher's mound
           this.graphics_state.camera_transform = lookAt(
             [4.6, 339, 15], [0, 260, 15], [0, 0, 1]
           );
         });
-
         controls.add("h", this, function() { // Home plate
           this.graphics_state.camera_transform = lookAt(
             [-.6, 81, 15], [0, 90, 15], [0, 0, 1]

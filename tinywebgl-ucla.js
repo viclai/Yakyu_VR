@@ -172,11 +172,12 @@ Declare_Any_Class("Shortcut_Manager",
         var ele = opt.target == 'string' ? document.getElementById(opt.target) : opt.target;
         shortcut_combination = shortcut_combination.toLowerCase();
         var onkeypress = function(e) // On each keypress, this gets called [# of bound keys] times
-          { e = e || window.event;
-            if( opt['disable_in_input'] )
-            { var element = e.target || e.srcElement || element.parentNode;
-              if( element.nodeType == 3 ) element = element.parentNode;
-              if( element.tagName == 'INPUT' || element.tagName == 'TEXTAREA' ) return;
+          {
+            e = e || window.event;
+            if (opt['disable_in_input']) {
+              var element = e.target || e.srcElement || element.parentNode;
+              if (element.nodeType == 3) element = element.parentNode;
+              if (element.tagName == 'INPUT' || element.tagName == 'TEXTAREA') return;
             }
             var code = e.keyCode || e.which, character = code == 188 ? "," : ( code == 190 ? "." : String.fromCharCode(code).toLowerCase() );
             var keycombo = shortcut_combination.split("+"), num_pressed = 0;

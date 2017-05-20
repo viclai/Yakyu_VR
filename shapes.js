@@ -831,3 +831,669 @@ Declare_Any_Class("Quarter_Circle_Diamond",
         }
       }
   }, Shape)
+
+Declare_Any_Class("Fence",
+  {
+    'populate'(rows, columns)
+      {
+        var subShape = function(oShape, iOffsetX, iOffsetZ, iNextIndex) {
+          var i;
+          // Top
+          /* 1 */
+          oShape.positions.push(
+            vec3(-1 + iOffsetX, .1, 1 + iOffsetZ),
+            vec3(-1 + iOffsetX, .1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, 1 + iOffsetZ),
+
+            vec3(-1 + iOffsetX, .1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, 1 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(0, 1), vec2(0, .9), vec2(1, 1),
+            vec2(0, .9), vec2(1, .9), vec2(1, 1)
+          );
+          oShape.normals.push(
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          /* 2 */
+          oShape.positions.push(
+            vec3(.9 + iOffsetX, .1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, -.9 + iOffsetZ),
+
+            vec3(.9 + iOffsetX, .1, -.9 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, -.9 + iOffsetZ),
+            vec3(.9 + iOffsetX, .1, .9 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(.9, .9), vec2(1, .9), vec2(1, .1),
+            vec2(.9, .1), vec2(1, .1), vec2(.9, .9)
+          );
+          oShape.normals.push(
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          /* 3 */
+          oShape.positions.push(
+            vec3(-1 + iOffsetX, .1, -.9 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, -.9 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, -1 + iOffsetZ),
+
+            vec3(1 + iOffsetX, .1, -1 + iOffsetZ),
+            vec3(-1 + iOffsetX, .1, -1 + iOffsetZ),
+            vec3(-1 + iOffsetX, .1, -.9 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(0, .1), vec2(1, .1), vec2(1, 0),
+            vec2(1, 0), vec2(0, 0), vec2(0, .1)
+          );
+          oShape.normals.push(
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          /* 4 */
+          oShape.positions.push(
+            vec3(-1 + iOffsetX, .1, .9 + iOffsetZ),
+            vec3(-.9 + iOffsetX, .1, .9 + iOffsetZ),
+            vec3(-.9 + iOffsetX, .1, -.9 + iOffsetZ),
+
+            vec3(-.9 + iOffsetX, .1, -.9 + iOffsetZ),
+            vec3(-1 + iOffsetX, .1, -.9 + iOffsetZ),
+            vec3(-1 + iOffsetX, .1, .9 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(0, .9), vec2(.1, .9), vec2(.1, .1),
+            vec2(.1, .1), vec2(0, .1), vec2(0, .9)
+          );
+          oShape.normals.push(
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          // Bottom
+          /* 1 */
+          oShape.positions.push(
+            vec3(-1 + iOffsetX, -.1, 1 + iOffsetZ),
+            vec3(-1 + iOffsetX, -.1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, 1 + iOffsetZ),
+
+            vec3(-1 + iOffsetX, -.1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, 1 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(0, 1), vec2(0, .9), vec2(1, 1),
+            vec2(0, .9), vec2(1, .9), vec2(1, 1)
+          );
+          oShape.normals.push(
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          /* 2 */
+          oShape.positions.push(
+            vec3(.9 + iOffsetX, -.1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, .9 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, -.9 + iOffsetZ),
+
+            vec3(.9 + iOffsetX, -.1, -.9 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, -.9 + iOffsetZ),
+            vec3(.9 + iOffsetX, -.1, .9 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(.9, .9), vec2(1, .9), vec2(1, .1),
+            vec2(.9, .1), vec2(1, .1), vec2(.9, .9)
+          );
+          oShape.normals.push(
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          /* 3 */
+          oShape.positions.push(
+            vec3(-1 + iOffsetX, -.1, -.9 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, -.9 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, -1 + iOffsetZ),
+
+            vec3(1 + iOffsetX, -.1, -1 + iOffsetZ),
+            vec3(-1 + iOffsetX, -.1, -1 + iOffsetZ),
+            vec3(-1 + iOffsetX, -.1, -.9 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(0, .1), vec2(1, .1), vec2(1, 0),
+            vec2(1, 0), vec2(0, 0), vec2(0, .1)
+          );
+          oShape.normals.push(
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          /* 4 */
+          oShape.positions.push(
+            vec3(-1 + iOffsetX, -.1, .9 + iOffsetZ),
+            vec3(-.9 + iOffsetX, -.1, .9 + iOffsetZ),
+            vec3(-.9 + iOffsetX, -.1, -.9 + iOffsetZ),
+
+            vec3(-.9 + iOffsetX, -.1, -.9 + iOffsetZ),
+            vec3(-1 + iOffsetX, -.1, -.9 + iOffsetZ),
+            vec3(-1 + iOffsetX, -.1, .9 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(0, .9), vec2(.1, .9), vec2(.1, .1),
+            vec2(.1, .1), vec2(0, .1), vec2(0, .9)
+          );
+          oShape.normals.push(
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+            vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          // Right
+          oShape.positions.push(
+            vec3(1 + iOffsetX, .1, 1 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, 1 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, -1 + iOffsetZ),
+
+            vec3(1 + iOffsetX, -.1, -1 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, -1 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, 1 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(1, 1), vec2(1, 0), vec2(0, 0),
+            vec2(0, 0), vec2(0, 1), vec2(1, 1)
+          );
+          oShape.normals.push(
+            vec3(1, 0, 0), vec3(1, 0, 0), vec3(1, 0, 0),
+            vec3(1, 0, 0), vec3(1, 0, 0), vec3(1, 0, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          // Left
+          oShape.positions.push(
+            vec3(-1 + iOffsetX, .1, 1 + iOffsetZ),
+            vec3(-1 + iOffsetX, -.1, 1 + iOffsetZ),
+            vec3(-1 + iOffsetX, -.1, -1 + iOffsetZ),
+
+            vec3(-1 + iOffsetX, -.1, -1 + iOffsetZ),
+            vec3(-1 + iOffsetX, .1, -1 + iOffsetZ),
+            vec3(-1 + iOffsetX, .1, 1 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(0, 1), vec2(0, 0), vec2(1, 0),
+            vec2(1, 0), vec2(1, 1), vec2(0, 1)
+          );
+          oShape.normals.push(
+            vec3(-1, 0, 0), vec3(-1, 0, 0), vec3(-1, 0, 0),
+            vec3(-1, 0, 0), vec3(-1, 0, 0), vec3(-1, 0, 0)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          // Back
+          oShape.positions.push(
+            vec3(-1 + iOffsetX, .1, -1 + iOffsetZ),
+            vec3(-1 + iOffsetX, -.1, -1 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, -1 + iOffsetZ),
+
+            vec3(1 + iOffsetX, -.1, -1 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, -1 + iOffsetZ),
+            vec3(-1 + iOffsetX, .1, -1 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(1, 1), vec2(1, 0), vec2(0, 0),
+            vec2(0, 0), vec2(0, 1), vec2(1, 1)
+          );
+          oShape.normals.push(
+            vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1),
+            vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          // Front
+          oShape.positions.push(
+            vec3(-1 + iOffsetX, .1, 1 + iOffsetZ),
+            vec3(-1 + iOffsetX, -.1, 1 + iOffsetZ),
+            vec3(1 + iOffsetX, -.1, 1 + iOffsetZ),
+
+            vec3(1 + iOffsetX, -.1, 1 + iOffsetZ),
+            vec3(1 + iOffsetX, .1, 1 + iOffsetZ),
+            vec3(-1 + iOffsetX, .1, 1 + iOffsetZ)
+          );
+          oShape.texture_coords.push(
+            vec2(0, 1), vec2(0, 0), vec2(1, 0),
+            vec2(1, 0), vec2(1, 1), vec2(0, 1)
+          );
+          oShape.normals.push(
+            vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1),
+            vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1)
+          );
+          for (i = 0; i < 6; i++){
+            oShape.indices.push(iNextIndex);
+            iNextIndex++;
+          }
+
+          return iNextIndex;
+        }
+
+        var next_index = 0;
+        var i;
+        var j;
+        var startZ;
+        var startX;
+        var offsetX;
+        var offsetZ;
+        var off = Math.sqrt(.1 * .1 / 2);
+
+        for (i = 1, startX = 0, startZ = 0;
+             i <= rows;
+             i++, startZ += 2, startX += 2) {
+
+          for (j = 1, offsetX = 0, offsetZ = 0; j <= columns; j++, offsetX -= 2, offsetZ += 2) {
+            next_index = subShape(this, startX + offsetX, startZ + offsetZ, next_index);
+          }
+        }
+        
+
+        /* Left-back */
+        this.positions.push(
+          vec3(-off, .1, -2 - off),
+          vec3(-off, -.1, -2 - off),
+          vec3((-2 * columns) - off, .1, (2 * (columns - 1) - off)),
+
+          vec3((-2 * columns) - off, -.1, (2 * (columns - 1)) - off),
+          vec3((-2 * columns) - off, .1, (2 * (columns - 1)) - off),
+          vec3(-off, -.1, -2 - off)
+        );
+        this.texture_coords.push(
+          vec2(0, 1), vec2(0, 0), vec2(1, 1),
+          vec2(1, 0), vec2(1, 1), vec2(0, 0)
+        );
+        this.normals.push(
+          vec3(-1, 0, -1), vec3(-1, 0, -1), vec3(-1, 0, -1),
+          vec3(-1, 0, -1), vec3(-1, 0, -1), vec3(-1, 0, -1)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3(-off, .1, -2 - off),
+          vec3(0, .1, -2),
+          vec3((-2 * columns) - off, .1, (2 * (columns - 1) - off)),
+
+          vec3((-2 * columns) - off, .1, (2 * (columns - 1)) - off),
+          vec3(-2 * columns, .1, 2 * (columns - 1)),
+          vec3(0, .1, -2)
+        );
+        this.texture_coords.push(
+          vec2(0, 1), vec2(0, 0), vec2(1, 1),
+          vec2(1, 0), vec2(1, 1), vec2(0, 0)
+        );
+        this.normals.push(
+          vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+          vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3(-off, -.1, -2 - off),
+          vec3(0, -.1, -2),
+          vec3((-2 * columns) - off, -.1, (2 * (columns - 1)) - off),
+
+          vec3((-2 * columns) - off, -.1, (2 * (columns - 1)) - off),
+          vec3(-2 * columns, -.1, 2 * (columns - 1)),
+          vec3(0, -.1, -2)
+        );
+        this.texture_coords.push(
+          vec2(0, 1), vec2(0, 0), vec2(1, 1),
+          vec2(1, 0), vec2(1, 1), vec2(0, 0)
+        );
+        this.normals.push(
+          vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0),
+          vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3(0, .1, -2),
+          vec3(0, -.1, -2),
+          vec3(-2 * columns, .1, 2 * (columns - 1)),
+
+          vec3(-2 * columns, -.1, 2 * (columns - 1)),
+          vec3(-2 * columns, .1, 2 * (columns - 1)),
+          vec3(0, -.1, -2)
+        );
+        this.texture_coords.push(
+          vec2(0, 1), vec2(0, 0), vec2(1, 1),
+          vec2(1, 0), vec2(1, 1), vec2(0, 0)
+        );
+        this.normals.push(
+          vec3(-1, 0, -1), vec3(-1, 0, -1), vec3(-1, 0, -1),
+          vec3(-1, 0, -1), vec3(-1, 0, -1), vec3(-1, 0, -1)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        /* Right-back */
+        this.positions.push(
+          vec3(off, .1, -2 - off),
+          vec3(off, -.1, -2 - off),
+          vec3((2 * rows) + off, .1, (2 * (rows - 1)) - off),
+
+          vec3((2 * rows) + off, -.1, (2 * (rows - 1)) - off),
+          vec3((2 * rows) + off, .1, (2 * (rows - 1)) - off),
+          vec3(off, -.1, -2 - off)
+        );
+        this.texture_coords.push(
+          vec2(1, 1), vec2(1, 0), vec2(0, 1),
+          vec2(0, 0), vec2(0, 1), vec2(1, 0)
+        );
+        this.normals.push(
+          vec3(1, 0, -1), vec3(1, 0, -1), vec3(1, 0, -1),
+          vec3(1, 0, -1), vec3(1, 0, -1), vec3(1, 0, -1)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3(0, .1, -2),
+          vec3(off, .1, -2 - off),
+          vec3((2 * rows) + off, .1, (2 * (rows - 1)) - off),
+
+          vec3((2 * rows) + off, .1, (2 * (rows - 1)) - off),
+          vec3((2 * rows), .1, (2 * (rows - 1))),
+          vec3(0, .1, -2)
+        );
+        this.texture_coords.push(
+          vec2(1, 1), vec2(1, 0), vec2(0, 1),
+          vec2(0, 0), vec2(0, 1), vec2(1, 0)
+        );
+        this.normals.push(
+          vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+          vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3(0, -.1, -2),
+          vec3(off, -.1, -2 - off),
+          vec3((2 * rows) + off, -.1, (2 * (rows - 1)) - off),
+
+          vec3((2 * rows) + off, -.1, (2 * (rows - 1)) - off),
+          vec3(2 * rows, -.1, 2 * (rows - 1)),
+          vec3(0, -.1, -2)
+        );
+        this.texture_coords.push(
+          vec2(1, 1), vec2(1, 0), vec2(0, 1),
+          vec2(0, 0), vec2(0, 1), vec2(1, 0)
+        );
+        this.normals.push(
+          vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0),
+          vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3(0, .1, -2),
+          vec3(0, -.1, -2),
+          vec3(2 * rows, .1, 2 * (rows - 1)),
+
+          vec3(2 * rows, -.1, 2 * (rows - 1)),
+          vec3(2 * rows, .1, 2 * (rows - 1)),
+          vec3(0, -.1, -2)
+        );
+        this.texture_coords.push(
+          vec2(1, 1), vec2(1, 0), vec2(0, 1),
+          vec2(0, 0), vec2(0, 1), vec2(1, 0)
+        );
+        this.normals.push(
+          vec3(-1, 0, 1), vec3(-1, 0, 1), vec3(-1, 0, 1),
+          vec3(-1, 0, 1), vec3(-1, 0, 1), vec3(-1, 0, 1)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        /* Right-front */
+        this.positions.push(
+          vec3((2 * rows) + off, -.1, (2 * (rows - 1)) + off),
+          vec3((2 * rows) + off, .1, (2 * (rows - 1)) + off),
+          vec3((2 * (rows - columns)) + off, -.1, (2 * (rows + columns - 1)) + off),
+
+          vec3((2 * (rows - columns)) + off, -.1, (2 * (rows + columns - 1)) + off),
+          vec3((2 * (rows - columns)) + off, .1, (2 * (rows + columns - 1)) + off),
+          vec3((2 * rows) + off, .1, (2 * (rows - 1)) + off)
+        );
+        this.texture_coords.push(
+          vec2(1, 0), vec2(1, 1), vec2(0, 0),
+          vec2(0, 0), vec2(0, 1), vec2(1, 1)
+        );
+        this.normals.push(
+          vec3(1, 0, 1), vec3(1, 0, 1), vec3(1, 0, 1),
+          vec3(1, 0, 1), vec3(1, 0, 1), vec3(1, 0, 1)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3((2 * rows) + off, .1, (2 * (rows - 1)) + off),
+          vec3((2 * rows), .1, (2 * (rows - 1))),
+          vec3((2 * (rows - columns)) + off, .1, (2 * (rows + columns - 1)) + off),
+
+          vec3((2 * (rows - columns)) + off, .1, (2 * (rows + columns - 1)) + off),
+          vec3(2 * (rows - columns), .1, 2 * (rows + columns - .5)),
+          vec3(2 * rows, .1, 2 * (rows - 1))
+        );
+        this.texture_coords.push(
+          vec2(1, 0), vec2(1, 1), vec2(0, 0),
+          vec2(0, 0), vec2(0, 1), vec2(1, 1)
+        );
+        this.normals.push(
+          vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+          vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3((2 * rows) + off, -.1, (2 * (rows - 1)) + off),
+          vec3((2 * rows), -.1, (2 * (rows - 1))),
+          vec3((2 * (rows - columns)) + off, -.1, (2 * (rows + columns - 1)) + off),
+
+          vec3((2 * (rows - columns)) + off, -.1, (2 * (rows + columns - 1)) + off),
+          vec3(2 * (rows - columns), -.1, 2 * (rows + columns - .5)),
+          vec3(2 * rows, -.1, 2 * (rows - 1))
+        );
+        this.texture_coords.push(
+          vec2(1, 0), vec2(1, 1), vec2(0, 0),
+          vec2(0, 0), vec2(0, 1), vec2(1, 1)
+        );
+        this.normals.push(
+          vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0),
+          vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3(2 * rows, -.1, 2 * (rows - 1)),
+          vec3(2 * rows, .1, 2 * (rows - 1)),
+          vec3(2 * (rows - columns), -.1, 2 * (rows + columns - 1)),
+
+          vec3(2 * (rows - columns), -.1, 2 * (rows + columns - 1)),
+          vec3(2 * (rows - columns), .1, 2 * (rows + columns - 1)),
+          vec3(2 * rows, .1, 2 * (rows - 1))
+        );
+        this.texture_coords.push(
+          vec2(1, 0), vec2(1, 1), vec2(0, 0),
+          vec2(0, 0), vec2(0, 1), vec2(1, 1)
+        );
+        this.normals.push(
+          vec3(1, 0, 1), vec3(1, 0, 1), vec3(1, 0, 1),
+          vec3(1, 0, 1), vec3(1, 0, 1), vec3(1, 0, 1)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        /* Left-front */
+        this.positions.push(
+          vec3((2 * (rows - columns)) -off, -.1, (2 * (rows + columns - 1)) + off),
+          vec3((2 * (rows - columns)) - off, .1, (2 * (rows + columns - 1)) + off),
+          vec3((-2 * columns) - off, -.1, (2 * (columns - 1)) + off),
+
+          vec3((-2 * columns) - off, -.1, (2 * (columns - 1)) + off),
+          vec3((-2 * columns) - off, .1, (2 * (columns - 1)) + off),
+          vec3((2 * (rows - columns)) - off, .1, (2 * (rows + columns - 1)) + off),
+        );
+        this.texture_coords.push(
+          vec2(1, 0), vec2(1, 1), vec2(0, 0),
+          vec2(0, 0), vec2(0, 1), vec2(1, 1)
+        );
+        this.normals.push(
+          vec3(-1, 0, 1), vec3(-1, 0, 1), vec3(-1, 0, 1),
+          vec3(-1, 0, 1), vec3(-1, 0, 1), vec3(-1, 0, 1)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3((2 * (rows - columns)) - off, .1, (2 * (rows + columns - 1)) + off),
+          vec3(2 * (rows - columns), .1, (2 * (rows + columns - 1))),
+          vec3(-2 * columns, .1, (2 * (columns - 1))),
+
+          vec3(-2 * columns, .1, (2 * (columns - 1))),
+          vec3((-2 * columns) - off, .1, (2 * (columns - 1)) + off),
+          vec3((2 * (rows - columns)) - off, .1, (2 * (rows + columns - 1)) + off),
+        );
+        this.texture_coords.push(
+          vec2(1, 0), vec2(1, 1), vec2(0, 1),
+          vec2(0, 1), vec2(0, 0), vec2(1, 0)
+        );
+        this.normals.push(
+          vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0),
+          vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3((2 * (rows - columns)) - off, -.1, (2 * (rows + columns - 1)) + off),
+          vec3(2 * (rows - columns), -.1, (2 * (rows + columns - 1))),
+          vec3(-2 * columns, .1, (2 * (columns - 1))),
+
+          vec3(-2 * columns, -.1, (2 * (columns - 1))),
+          vec3((-2 * columns) - off, -.1, (2 * (columns - 1)) + off),
+          vec3((2 * (rows - columns)) - off, -.1, (2 * (rows + columns - 1)) + off),
+        );
+        this.texture_coords.push(
+          vec2(1, 0), vec2(1, 1), vec2(0, 1),
+          vec2(0, 1), vec2(0, 0), vec2(1, 0)
+        );
+        this.normals.push(
+          vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0),
+          vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.positions.push(
+          vec3(2 * (rows - columns), -.1, 2 * (rows + columns - 1)),
+          vec3(2 * (rows - columns), .1, 2 * (rows + columns - 1)),
+          vec3(-2 * columns, -.1, 2 * (columns - 1)),
+
+          vec3(-2 * columns, -.1, 2 * (columns - 1)),
+          vec3(-2 * columns, .1, 2 * (columns - 1)),
+          vec3(2 * (rows - columns), .1, 2 * (rows + columns - 1)),
+        );
+        this.texture_coords.push(
+          vec2(1, 0), vec2(1, 1), vec2(0, 0),
+          vec2(0, 0), vec2(0, 1), vec2(1, 1)
+        );
+        this.normals.push(
+          vec3(-1, 0, 1), vec3(-1, 0, 1), vec3(-1, 0, 1),
+          vec3(-1, 0, 1), vec3(-1, 0, 1), vec3(-1, 0, 1)
+        );
+        for (i = 0; i < 6; i++) {
+          this.indices.push(next_index);
+          next_index++;
+        }
+
+        this.normalize_positions();
+      }
+  }, Shape)
