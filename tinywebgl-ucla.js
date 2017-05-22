@@ -342,7 +342,7 @@ Declare_Any_Class("Canvas_Manager",
 
         gl.clearColor.apply(gl, background_color); // Tell the GPU which color to clear the canvas with each frame
         gl.viewport(0, 0, this.width, this.height); // Build the canvas's matrix for converting -1 to 1 ranged coords to its own pixel coords.
-        gl.enable(gl.DEPTH_TEST);   gl.enable( gl.BLEND ); // Enable Z-Buffering test with blending
+        gl.enable(gl.DEPTH_TEST);   gl.enable(gl.BLEND); // Enable Z-Buffering test with blending
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Specify an interpolation method for blending "transparent" triangles over the existing pixels
       },
     'register_scene_component'(component)

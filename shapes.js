@@ -1345,7 +1345,7 @@ Declare_Any_Class("Fence",
           vec3((2 * (rows - columns)) + off, .1, (2 * (rows + columns - 1)) + off),
 
           vec3((2 * (rows - columns)) + off, .1, (2 * (rows + columns - 1)) + off),
-          vec3(2 * (rows - columns), .1, 2 * (rows + columns - .5)),
+          vec3(2 * (rows - columns), .1, 2 * (rows + columns - 1)),
           vec3(2 * rows, .1, 2 * (rows - 1))
         );
         this.texture_coords.push(
@@ -1367,7 +1367,7 @@ Declare_Any_Class("Fence",
           vec3((2 * (rows - columns)) + off, -.1, (2 * (rows + columns - 1)) + off),
 
           vec3((2 * (rows - columns)) + off, -.1, (2 * (rows + columns - 1)) + off),
-          vec3(2 * (rows - columns), -.1, 2 * (rows + columns - .5)),
+          vec3(2 * (rows - columns), -.1, 2 * (rows + columns - 1)),
           vec3(2 * rows, -.1, 2 * (rows - 1))
         );
         this.texture_coords.push(
@@ -1407,7 +1407,7 @@ Declare_Any_Class("Fence",
 
         /* Left-front */
         this.positions.push(
-          vec3((2 * (rows - columns)) -off, -.1, (2 * (rows + columns - 1)) + off),
+          vec3((2 * (rows - columns)) - off, -.1, (2 * (rows + columns - 1)) + off),
           vec3((2 * (rows - columns)) - off, .1, (2 * (rows + columns - 1)) + off),
           vec3((-2 * columns) - off, -.1, (2 * (columns - 1)) + off),
 

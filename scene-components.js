@@ -10,10 +10,543 @@
  * extra key / mouse controls.
  ****************************************************************************/
 
+
+// DISCLAIMER: The collision method shown below is not used by anyone; it's
+// just very quick to code. Making every collision body a stretched sphere is
+// kind of a hack, and looping through a list of discrete sphere points to see
+// if the volumes intersect is *really* a hack (there are perfectly good
+// analytic expressions that can test if two ellipsoids intersect without
+// discretizing them into points). On the other hand, for non-convex shapes
+// you're usually going to have to loop through a list of discrete
+// tetrahedrons defining the shape anyway.
+Declare_Any_Class("Body",
+  {
+    'construct'(name, s, m, loc, scale = vec3(1, 1, 1), lv = vec3(),
+                la = vec3(), av = 0, aa = 0, spin_axis = vec3(1, 0, 0))
+      {
+        this.define_data_members({
+          name                 : name,
+          shape                : s,
+          material             : m,
+          scale                : scale,
+          location_matrix      : loc, 
+          linear_velocity      : lv,
+          linear_acceleration  : la,
+          angular_velocity     : av,
+          angular_acceleration : aa,
+          spin_axis            : spin_axis
+        });
+      },
+    'advance'(t) // Do one timestep.
+      {
+        if (Array.isArray(t) && t.length == 4) {
+          this.location_matrix = t;
+        } else {
+          var delta_velocity = function(aVelocity, aAcceleration) {
+            var i;
+            var delta;
+
+            for (i = 0; i < 3; i++) {
+              delta = aVelocity[i] + aAcceleration[i];
+              if ((aVelocity[i] > 0 && delta < 0) || // + -> - velocity
+                (aVelocity[i] < 0 && delta > 0) ||   // - -> + velocity
+                (aVelocity[i] === 0 && i != 2)) {    // 0 z-velocity
+                aVelocity[i] = 0;
+                if (i !== 2)
+                  aAcceleration[i] = 0;
+              }
+              else
+                aVelocity[i] = delta;
+            }
+            return aVelocity;
+          }
+
+          var delta;
+
+          this.linear_velocity = delta_velocity(
+            this.linear_velocity,
+            this.linear_acceleration
+          );
+          // Move proportionally to real time.
+          delta = translation(scale_vec(t, this.linear_velocity));
+          // Apply linear velocity - pre-multiply to keep translations together
+          this.location_matrix = mult(delta, this.location_matrix);
+          
+          // Move proportionally to real time.
+          delta = rotation(t * this.angular_velocity, this.spin_axis);
+          // Apply angular velocity - post-multiply to keep rotations together
+          this.location_matrix = mult(this.location_matrix, delta);
+          //this.move();   
+        }
+      },
+    'check_if_colliding'(b, a_inv, shape)
+      {
+        if (this == b) // Nothing collides with itself
+          return false;
+        // Convert sphere b to a coordinate frame where a is a unit sphere
+        var T = mult(a_inv, mult(b.location_matrix, scale(b.scale)));
+        for (let p of shape.positions) { // For each vertex in that b,
+          // Apply a_inv*b coordinate frame shift
+          var Tp = mult_vec(T, p.concat(1)).slice(0, 3);
+
+          // Check if in that coordinate frame it penetrates the unit sphere
+          // at the origin.
+          if (dot(Tp, Tp) < 1.2)
+            return true;
+        }
+        return false;
+      }
+  });
+
+Declare_Any_Class("Projectile",
+  {
+    'move'()
+      {
+        var pos = mult_vec(this.location_matrix, vec4(0, 0, 0, 1));
+        //if (pos[3] <= 3)
+
+      },
+  }, Body);
+
 Declare_Any_Class("Baseball_Scene",
   {
     'construct'(context)
       {
+        /*
+         * Draws the baseball field.
+         * @param {Object} oScene - The baseball scene.
+         * @returns {Object[]} The transformation matrix to the surface of the
+         *                     field.
+         */
+        var draw_field = function(oScene) {
+          var tile_dimensions = {
+            "length" : 2 * 150, // x
+            "width"  : 2 * 150, // y
+            "height" : 2 * 1    // z
+          };
+          var tilesX = 10
+          var tilesY = 10
+          var ground = vec3(tile_dimensions.length / 2, tile_dimensions.length / 2, 4);
+          var ground_center = identity();
+          var surface = mult(ground_center, translation(0, 0, 4));
+          var partial_sphere = mult(surface, translation(1.5, 300, -4));
+          var mound = vec3(30, 30, 10);
+          var infield = mult(surface, translation(0, 50, 1.0001));
+          var diamond = vec3(500, 500, 1);
+          var chalk;
+          var chalk_scale = vec3(500, 1, 1);
+          var offset;
+          var tile;
+          var i;
+          var j;
+          var gate_start = mult(surface, translation(0, 45, 1.3));
+          var transform;
+          var gate_transform;
+          var gate_scale = vec3(20, 5, 20);
+          var pole;
+          var pole_scale = vec3(5, 5, 500);
+
+          // Draw grass
+          for (i = 0; i < tile_dimensions.length * tilesX; i += tile_dimensions.length) {
+            for (offset = 0; offset < tile_dimensions.width * tilesY; offset += tile_dimensions.width) {
+              tile = mult(ground_center, translation(i, offset, 0));
+              oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.grass, tile, ground));
+
+              if (offset !== 0) {
+                tile = mult(ground_center, translation(i, -offset, 0));
+                oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.grass, tile, ground));
+              }
+            }
+
+            if (i !== 0) {
+              for (offset = 0; offset < tile_dimensions.width * tilesY; offset += tile_dimensions.width) {
+                tile = mult(ground_center, translation(-i, offset, 0));
+                oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.grass, tile, ground));
+
+                if (offset !== 0) {
+                  tile = mult(ground_center, translation(-i, -offset, 0));
+                  oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.grass, tile, ground));
+                }
+              }
+            }
+          }
+
+          // Draw pitcher's mound
+          oScene.bodies.auto.push(new Body("mound", oScene.shapes.ball, oScene.infield_dirt, partial_sphere, mound));
+
+          // Draw baseball diamond
+          infield = mult(infield, rotation(45, [0,0,1]));
+          oScene.bodies.auto.push(new Body("infield", oScene.shapes.diamond, oScene.infield_dirt, infield, diamond));
+
+          // Draw baseline and foul poles
+          chalk = mult(surface, translation(-17, 160, .1));
+          chalk = mult(chalk, rotation(-45, [0, 0, 1]));
+          pole = chalk;
+          chalk = mult(chalk, translation(-500, 0, 0));
+          oScene.bodies.auto.push(new Body("foul_line", oScene.shapes.box, oScene.chalk, chalk, chalk_scale));
+          pole = mult(pole, translation(-1000, 0, 0));
+          oScene.bodies.auto.push(new Body("foul_pole", oScene.shapes.cylinder, oScene.yellow_paint, pole, pole_scale));
+
+          chalk = mult(surface, translation(17, 160, .1));
+          chalk = mult(chalk, rotation(45, [0, 0, 1]));
+          pole = chalk;
+          chalk = mult(chalk, translation(500, 0, 0));
+          oScene.bodies.auto.push(new Body("foul_line", oScene.shapes.box, oScene.chalk, chalk, chalk_scale));
+          pole = mult(pole, translation(1000, 0, 0));
+          oScene.bodies.auto.push(new Body("foul_pole", oScene.shapes.cylinder, oScene.yellow_paint, pole, pole_scale));
+
+          // Draw backstop
+          gate_transform = mult(gate_start, translation(0, 0, 25));
+          gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
+          
+          gate_transform = mult(gate_start, translation(63 * Math.cos(radians(45)), 26 * Math.sin(radians(45)), 25));
+          gate_transform = mult(gate_transform, rotation(45, [0, 0, 1]));
+          gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
+
+          gate_transform = mult(gate_start, translation(-63 * Math.cos(radians(45)), 26 * Math.sin(radians(45)), 25));
+          gate_transform = mult(gate_transform, rotation(-45, [0, 0, 1]));
+          gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
+
+          return surface;
+        };
+
+        /*
+         * Draws a baseball player as a batter.
+         * @param {Object}   oScene   - The baseball scene.
+         * @param {Object[]} mSurface - The transformation matrix to the 
+         *                              surface of the ground.
+         */
+        var draw_batter = function(oScene, mSurface) {
+          var body_top;
+          var head_center;
+          var head_dimensions = {
+            "length" : 2 * 4,
+            "width"  : 2 * 4,
+            "height" : 2 * 4
+          };
+          var helmet_center;
+          var helmet_pos;
+          var helmet_size = vec3(
+            head_dimensions.length / 2,
+            head_dimensions.width / 2,
+            head_dimensions.height / 2
+          );
+
+          /*
+           * Draws the head of the player.
+           * @param {Object}   oScene          - The baseball scene.
+           * @param {Object[]} mBody           - The transformation matrix to
+           *                                     the top of the body.
+           * @param {Object}   oHeadDimensions - The dimensions of the head.
+           * @returns {Object[]} The transformation matrix for the center of
+           *                     the head.
+           */
+          var draw_head = function(oScene, mBody, oHeadDimensions) {
+            var offset = -.35; // Extra offset to place the head nicely on the body
+            var center = mult(mBody, translation(
+              0,
+              0,
+              offset + oHeadDimensions.height / 2)
+            );
+            face = vec3(
+              oHeadDimensions.length / 2,
+              oHeadDimensions.width / 2,
+              oHeadDimensions.height / 2
+            );
+            oScene.bodies.auto.push(new Body(
+              "head",
+              oScene.shapes.sphere,
+              oScene.skin,
+              center,
+              face
+            ));
+            return center;
+          };
+
+          /*
+           * Draws the body of the player.
+           * @param {Object}   oScene   - The baseball scene.
+           * @param {Object[]} mSurface - The transformation matrix to the 
+           *                              surface of the ground.
+           * @returns {Object[]} The transformation matrix for the top of
+           *                     the body.
+           */
+          var draw_body = function(oScene, mSurface) {
+            var body;
+            var zScale = 8;
+            var bodyScale = 6;
+            var body_scale_transform = vec3(bodyScale, bodyScale, zScale);
+            var bodyTop = mult(mSurface, translation(-10, 125, 8 + (zScale * .2)));
+            var leftHinge;
+            var rightHinge;
+            var bat;
+            var batScaled = vec3(7, 7, 7);
+            var rot1;
+            var rot2;
+            var swing;
+            var rotAngle;
+
+            // Draw main body
+            body = mult(mSurface, translation(-10, 125, 8));
+            body = mult(body, rotation(90, [0, 0, 1]));
+            oScene.bodies.auto.push(new Body(
+              "body",
+              oScene.shapes.tube,
+              oScene.cloth,
+              body,
+              body_scale_transform
+            ));
+
+            return bodyTop;
+          };
+
+          /*
+           * Draws the shoes of the player.
+           * @param {Object}   oShape    - The Shape to draw.
+           * @param {Object}   oMaterial - The material to use to color the
+           *                               drawn shape.
+           * @param {Object[]} mSurface  - The transformation matrix to the
+           *                               surface of the ground.
+           */
+          var draw_shoes = function(oScene, mSurface) {
+            var shoe_dimensions = {
+              "length" : 2 * 4, // x
+              "width"  : 2 * 2, // y
+              "height" : 2      // z
+            };
+            var sizeShoe = vec3(
+              shoe_dimensions.length / 2,
+              shoe_dimensions.width / 2,
+              shoe_dimensions.height
+            );
+            var pos = mult(mSurface, translation(-10, 120, 1));
+            var flipShoe = rotation(180, [1, 0, 0]);
+
+            flipShoe = mult(flipShoe, rotation(180, [0, 0, 1]));
+
+            // First shoe
+            pos = mult(pos, flipShoe);
+            oScene.bodies.auto.push(new Body(
+              "shoe",
+              oScene.shapes.half_sphere,
+              oScene.rubber,
+              pos,
+              sizeShoe
+            ));
+
+            // Second shoe
+            pos = mult(mSurface, translation(-10, 130, 1));
+            pos = mult(pos, flipShoe);
+            oScene.bodies.auto.push(new Body(
+              "shoe",
+              oScene.shapes.half_sphere,
+              oScene.rubber,
+              pos,
+              sizeShoe
+            ));
+          };
+
+          draw_shoes(oScene, mSurface);
+          body_top = draw_body(oScene, mSurface);
+          head_center = draw_head(oScene, body_top, head_dimensions);
+
+          // Helmet
+          helmet_pos = mult(head_center, translation(
+            -.15 * head_dimensions.length / 2,
+            .1 * head_dimensions.width / 2,
+            .9 * head_dimensions.height / 2)
+          );
+          helmet_pos = mult(helmet_pos, rotation(165, [0, 0, 1]));
+          oScene.bodies.auto.push(new Body(
+            "helmet",
+            oScene.shapes.helmet,
+            oScene.helmet_paint,
+            helmet_pos,
+            helmet_size
+          ));
+        };
+
+        /*
+         * Draws a baseball player as a fielder.
+         * @param {Object}   oScene   - The baseball scene.
+         * @param {Object[]} mSurface - The transformation matrix to the 
+         *                              surface of the ground.
+         */
+        var draw_fielder = function(oScene, mSurface) {
+          var body_top;
+          var head_center;
+          var head_dimensions = {
+            "length" : 2 * 4,
+            "width"  : 2 * 4,
+            "height" : 2 * 4
+          };
+          var cap_pos;
+          var cap_size;
+
+          /*
+           * Draws the head of the player.
+           * @param {Object}   oScene          - The baseball scene
+           * @param {Object[]} mBody           - The transformation matrix to
+           *                                     the top of the body.
+           * @param {Object}   oHeadDimensions - The dimensions of the head.
+           * @returns {Object[]} The transformation matrix for the center of
+           *                     the head.
+           */
+          var draw_head = function(oScene, mBody, oHeadDimensions) {
+            var offset = -.35; // Extra offset to place the head nicely on the body
+            var center = mult(mBody, translation(
+              0,
+              0,
+              offset + oHeadDimensions.height / 2)
+            );
+            face = vec3(
+              oHeadDimensions.length / 2,
+              oHeadDimensions.width / 2,
+              oHeadDimensions.height / 2
+            );
+            oScene.bodies.auto.push(new Body(
+              "head",
+              oScene.shapes.sphere,
+              oScene.skin,
+              center,
+              face
+            ));
+            return center;
+          };
+
+          /*
+           * Draws the body of the player.
+           * @param {Object}   oScene   - The baseball scene.
+           * @param {Object[]} mSurface - The transformation matrix to the 
+           *                              surface of the ground.
+           * @returns {Object[]} The transformation matrix for the top of
+           *                     the body.
+           */
+          var draw_body = function(oScene, mSurface) {
+            var body;
+            var zScale = 8;
+            var bodyScale = 6;
+            var body_scale_transform = vec3(bodyScale, bodyScale, zScale);
+            var bodyTop = mult(mSurface, translation(1.5, 295, 12 + (zScale * .2)));
+            var leftHinge;
+            var rightHinge;
+            var rot1;
+            var rot2;
+            var glove;
+            var glove_size = vec3(1.5, 1.5, 1.5);
+            var throwMotion;
+            var gloveMotion;
+            var rotAngle;
+
+            /*
+             * Draws an arm of the player.
+             * @param {Object}   oScene  - The baseball scene.
+             * @param {Object[]} mPos    - The transformation matrix to the
+             *                             position to draw the arm.
+             */
+            var draw_arm = function(oScene, mPos) {
+              var arm = mPos;
+              var armScale = 8;
+
+              armScale = vec3(1, 1, armScale);
+              oScene.bodies.manual.push(new Body(
+                "arm",
+                oScene.shapes.tube,
+                oScene.cloth,
+                arm,
+                armScale
+              ));
+            };
+
+            // Draw main body
+            body = mult(mSurface, translation(1.5, 295, 12));
+            body = mult(body, rotation(90, [0, 0, 1]));
+            oScene.bodies.auto.push(new Body(
+              "body",
+              oScene.shapes.tube,
+              oScene.cloth,
+              body,
+              body_scale_transform
+            ));
+
+            return bodyTop;
+          };
+
+          /*
+           * Draws the shoes of the player.
+           * @param {Object}   oScene    - The baseball scene.
+           * @param {Object[]} mSurface  - The transformation matrix to the
+           *                               surface of the ground.
+           */
+          var draw_shoes = function(oScene, mSurface) {
+            var shoe_dimensions = {
+              "length" : 2 * 4, // x
+              "width"  : 2 * 2, // y
+              "height" : 2      // z
+            };
+            var sizeShoe = vec3(
+              shoe_dimensions.length / 2,
+              shoe_dimensions.width / 2,
+              shoe_dimensions.height
+            );
+            var pos = mult(mSurface, translation(1.5, 290, 5.5));
+            var flipShoe = rotation(180, [1, 0, 0]);
+
+            flipShoe = mult(flipShoe, rotation(180, [0, 0, 1]));
+
+            // First shoe
+            pos = mult(pos, flipShoe);
+            oScene.bodies.auto.push(new Body(
+              "shoe",
+              oScene.shapes.half_sphere,
+              oScene.rubber,
+              pos,
+              sizeShoe
+            ));
+
+            // Second shoe
+            pos = mult(mSurface, translation(1.5, 300, 6));
+            pos = mult(pos, flipShoe);
+            oScene.bodies.auto.push(new Body(
+              "shoe",
+              oScene.shapes.half_sphere,
+              oScene.rubber,
+              pos,
+              sizeShoe
+            ));
+          };
+
+          draw_shoes(oScene, mSurface);
+          body_top = draw_body(oScene, mSurface);
+          head_center = draw_head(oScene, body_top, head_dimensions);
+
+          // Cap
+          cap_pos = mult(head_center, translation(
+            -.01 * head_dimensions.length / 2,
+            -.09 * head_dimensions.width / 2,
+            .7 * head_dimensions.height / 2)
+          );
+          cap_pos = mult(cap_pos, rotation(90, [1, 0, 0]));
+          cap_pos = mult(cap_pos, rotation(-90, [0, 1, 0]));
+          cap_size = vec3(
+            head_dimensions.length / 2,
+            head_dimensions.width / 2,
+            head_dimensions.height / 2
+          );
+          oScene.bodies.auto.push(new Body(
+            "cap",
+            oScene.shapes.cap,
+            oScene.wool,
+            cap_pos,
+            cap_size
+          ));
+        };
+
+        var surface;
+
         var shapes = {
           "box"         : new Cube(), 
           "ball"        : new Shape_From_File("resources/baseball.obj"),
@@ -98,12 +631,21 @@ Declare_Any_Class("Baseball_Scene",
             ),
 
           // Miscellaneous
-          hit : false,
-          velocity : 1,
-          ball_location : [0, 0, 0],
-          ball_camera: false,
-          graphics_state : context.globals.graphics_state
+          surface             : null,
+          ball_free           : false,
+          ball_transform      : identity(),
+          ball_camera         : false,
+          ball_collision_objs : [],
+          graphics_state      : context.globals.graphics_state,
+          bodies              : { "auto" : [], "manual" : [] },
+          collider            : new Subdivision_Sphere(1),
+          prev_anim_time      : 0.0,
+          gravity             : 0.00001 * -9.8
         });
+
+        this.surface = draw_field(this);
+        draw_batter(this, this.surface);
+        draw_fielder(this, this.surface);
       },
     'init_keys'(controls)
       {
@@ -174,10 +716,6 @@ Declare_Any_Class("Baseball_Scene",
       },
     'display'(graphics_state)
       {
-        var model_transform = identity();
-        var t = graphics_state.animation_time;
-        var ball_pos;
-
         /*
          * Draws the baseball field.
          * @param {Object} oScene - The baseball scene.
@@ -202,8 +740,6 @@ Declare_Any_Class("Baseball_Scene",
           var tile;
           var i;
           var j;
-          var cols = 20;
-          var rows = 20;
           var gate_start = mult(surface, translation(0, 45, 1.3));
           var transform;
           var gate_transform;
@@ -374,11 +910,13 @@ Declare_Any_Class("Baseball_Scene",
               var draw_hand = function(oScene, mPos) {
                 var hand_radius = 1;
                 var hand_center = mult(mPos, translation(0, 0, -hand_radius));
+                oScene.bodies.manual.push(new Body("hand", oScene.shapes.sphere, oScene.skin, hand_center));
                 oScene.shapes.sphere.draw(graphics_state, hand_center, 
                   oScene.skin);
               };
 
               draw_hand(oScene, mult(arm, translation(0, 0, -armScale * .5)));
+              oScene.bodies.manual.push(new Body("arm", oScene.shapes.tube, oScene.cloth, arm, vec3(1, 1, armScale)));
               arm = mult(arm, scale(1, 1, armScale));
               oScene.shapes.tube.draw(graphics_state, arm, oScene.cloth);
             };
@@ -387,9 +925,9 @@ Declare_Any_Class("Baseball_Scene",
             body = mult(mSurface, translation(-10, 125, 8));
             body = mult(body, rotation(90, [0, 0, 1]));
             body = mult(body, scale(bodyScale, bodyScale, zScale));
-            oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
+            //oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
 
-            rotAngle = .01 * iTime;
+            rotAngle = .03 * iTime;
             if (rotAngle >= 180)
               rotAngle = 180;
             swing = mult(bodyTop, rotation(rotAngle, [0, 0, 1]));
@@ -406,6 +944,7 @@ Declare_Any_Class("Baseball_Scene",
             bat = mult(bat, translation(-2, -1.5, -1.5));
             bat = mult(bat, rotation(-45, [0, 0, 1]));
             bat = mult(bat, rotation(180, [1, 0, 0]));
+            oScene.bodies.manual.push(new Body("bat", oScene.shapes.bat, oScene.wood, bat, vec3(2, 2, 2)));
             bat = mult(bat, scale(7, 7, 7));
             oScene.shapes.bat.draw(graphics_state, bat, oScene.wood);
 
@@ -453,13 +992,13 @@ Declare_Any_Class("Baseball_Scene",
             oShape.draw(graphics_state, pos, oMaterial);
           };
 
-          draw_shoes(oScene.shapes.half_sphere, oScene.rubber, mSurface);
+          //draw_shoes(oScene.shapes.half_sphere, oScene.rubber, mSurface);
           body_top = draw_body(oScene, mSurface, iTime);
-          head_center = draw_head(oScene.shapes.sphere, oScene.skin, body_top,
-            head_dimensions);
+          //head_center = draw_head(oScene.shapes.sphere, oScene.skin, body_top,
+            //head_dimensions);
 
           // Helmet
-          helmet_pos = mult(head_center, translation(
+          /*helmet_pos = mult(head_center, translation(
             -.15 * head_dimensions.length / 2,
             .1 * head_dimensions.width / 2,
             .9 * head_dimensions.height / 2)
@@ -470,7 +1009,7 @@ Declare_Any_Class("Baseball_Scene",
             head_dimensions.width / 2,
             head_dimensions.height / 2)
           );
-          oScene.shapes.helmet.draw(graphics_state, helmet_pos, oScene.helmet_paint);
+          oScene.shapes.helmet.draw(graphics_state, helmet_pos, oScene.helmet_paint);*/
         };
 
         /*
@@ -562,8 +1101,12 @@ Declare_Any_Class("Baseball_Scene",
                 var hand_center = mult(mPos, translation(0, 0, -hand_radius));
                 var ball_transform;
 
+                oScene.bodies.manual.push(new Body("hand", oScene.shapes.sphere, oScene.skin, hand_center));
                 oScene.shapes.sphere.draw(graphics_state, hand_center,
                   oScene.skin);
+
+                if (oScene.ball_free)
+                  return;
 
                 if (.05 * iTime < 90) {
                   ball_transform = mult(hand_center, translation(
@@ -573,19 +1116,29 @@ Declare_Any_Class("Baseball_Scene",
                   );
                 }
                 else {
-                  if ((292.27 - (iTime * .01) < 139 && 17.33 - (iTime * .0005) < 10) || oScene.hit) {
-                    ball_transform = translation(-4.47, 139 + (iTime * .0001), 9.33 + (iTime * .001));
-                    ball_transform = mult(ball_transform, rotation(-.5 * iTime, [1, 0, 0]));
-                    oScene.hit = true;
-                    if (oScene.velocity < .05)
-                      oScene.velocity *= 2;
-                  } else {
-                    ball_transform = translation(-4.47, 292.27 - (iTime * .01), 17.33 - (iTime * .0005));
-                    ball_transform = mult(ball_transform, rotation(.5 * iTime, [1, 0, 0]));
-                  }
+                  oScene.bodies.auto.push(new Body(
+                    "baseball",
+                    oScene.shapes.ball,
+                    oScene.cork_stitch,
+                    oScene.ball_transform,
+                    vec3(.75, .75, .75),
+                    vec3(0, -.05, 0),
+                    vec3(0, 0, oScene.gravity),
+                    1,
+                    0,
+                    vec3(0, 1, 0)
+                  ));
+                  oScene.ball_free = true;
+                  return;
                 }
+                oScene.bodies.manual.push(new Body("baseball",
+                  oScene.shapes.ball,
+                  oScene.cork_stitch,
+                  ball_transform,
+                  vec3(.75, .75, .75)
+                ));
+                oScene.ball_transform = ball_transform;
                 ball_transform = mult(ball_transform, scale(.75, .75, .75));
-                oScene.ball_location = mult_vec(ball_transform, vec4(0, 0, 0, 1));
 
                 oScene.shapes.ball.draw(
                   graphics_state,
@@ -596,6 +1149,7 @@ Declare_Any_Class("Baseball_Scene",
 
               if (!bIsLeft)
                 draw_hand(oScene, mult(arm, translation(0, 0, -armScale * .5)), iTime);
+              oScene.bodies.manual.push(new Body("arm", oScene.shapes.tube, oScene.cloth, arm, vec3(1, 1, armScale)));
               arm = mult(arm, scale(1, 1, armScale));
               oScene.shapes.tube.draw(graphics_state, arm, oScene.cloth);
             };
@@ -604,7 +1158,7 @@ Declare_Any_Class("Baseball_Scene",
             body = mult(mSurface, translation(1.5, 295, 12));
             body = mult(body, rotation(90, [0, 0, 1]));
             body = mult(body, scale(bodyScale, bodyScale, zScale));
-            oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
+            //oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
 
             rotAngle = .05 * iTime;
             if (rotAngle >= 135)
@@ -623,6 +1177,7 @@ Declare_Any_Class("Baseball_Scene",
             glove = mult(leftHinge, translation((-bodyScale * 0.7)-2, -1, 0));
             glove = mult(glove, mult(rotation(-180, [0, 1, 0]), rotation(-90, [0, 0, 1])));
             glove = mult(glove, rotation(-90, [0,1,0]));
+            oScene.bodies.manual.push(new Body("mitt", oScene.shapes.mitt, oScene.leather, glove, vec3(1.5, 1.5, 1.5)));
             glove = mult(glove, scale(1.5, 1.5, 1.5));
             oScene.shapes.mitt.draw(graphics_state, glove, oScene.leather);
 
@@ -670,9 +1225,9 @@ Declare_Any_Class("Baseball_Scene",
             oShape.draw(graphics_state, pos, oMaterial);
           };
 
-          draw_shoes(oScene.shapes.half_sphere, oScene.rubber, mSurface);
+          //draw_shoes(oScene.shapes.half_sphere, oScene.rubber, mSurface);
           body_top = draw_body(oScene, mSurface, iTime);
-          head_center = draw_head(oScene.shapes.sphere, oScene.skin, body_top,
+          /*head_center = draw_head(oScene.shapes.sphere, oScene.skin, body_top,
             head_dimensions);
 
           // Cap
@@ -688,23 +1243,85 @@ Declare_Any_Class("Baseball_Scene",
             head_dimensions.width / 2,
             head_dimensions.height / 2)
           );
-          oScene.shapes.cap.draw(graphics_state, cap_pos, oScene.wool);
+          oScene.shapes.cap.draw(graphics_state, cap_pos, oScene.wool);*/
         };
+
+        var model_transform = identity();
+        var t = graphics_state.animation_time;
+        var ball_pos;
 
         graphics_state.lights = [
           new Light(vec4(0, 500, 1000, 1), Color(1, 1, 1, 1), 900000)
         ];
+
+        this.bodies.manual = [];
         
-        model_transform = draw_field(this);
+        model_transform = this.surface;
         draw_batter(this, model_transform, t);
         draw_fielder(this, model_transform, t);
 
+        for (let b of this.bodies.auto) {
+          b.shape.draw(graphics_state, mult(b.location_matrix, scale(b.scale)), b.material);
+          if (t > this.prev_anim_time) {
+            b.advance(graphics_state.animation_delta_time);
+
+            if (b.name === "baseball") {
+              this.ball_transform = b.location_matrix;
+            }
+          }
+        }
+
+        ball_pos = mult_vec(this.ball_transform, vec4(0, 0, 0, 1));
+
+        // Collision detection
+        if (t > this.prev_anim_time) {
+          console.log("Animation is on");
+          for (let b of this.bodies.manual.concat(this.bodies.auto)) {
+            var b_inv = inverse(mult(b.location_matrix, scale(b.scale)));
+             
+            for (let c of this.bodies.manual.concat(this.bodies.auto)) {
+              if (c.name === "baseball") {
+                if (b.check_if_colliding(c, b_inv, this.collider)) {
+                  if (b.name === "grass" || b.name === "infield" || b.name === "mound") {
+                    console.log("Collided with ground!");
+
+                    c.linear_velocity[2] = -.5 * c.linear_velocity[2]; // Ground normal force
+
+                    if (ball_pos[2] <= 7 && c.linear_velocity[2] === 0)
+                      c.linear_acceleration[2] = 0;
+                    else
+                      c.linear_acceleration[2] = this.gravity;
+
+                    // Ground friction
+                    if (c.linear_velocity[1] !== 0)
+                      c.linear_acceleration[1] = -.0005;
+                    if (c.linear_velocity[0] !== 0)
+                      c.linear_acceleration[0] = .0005;
+
+                  } else if (b.name === "bat") {
+                    console.log("Collided with bat!");
+                    c.linear_velocity[0] = -.015;
+                    c.linear_velocity[1] = -.8 * c.linear_velocity[1];
+                    c.linear_velocity[2] = .01 + c.linear_velocity[2];
+                    c.angular_velocity = -c.angular_velocity;
+                  } else if (b.name === "fence") {
+                    console.log("Collided with fence!");
+                    c.linear_velocity = vec3();
+                  }
+                }
+              }
+            }
+          }
+        }
+
         if (this.ball_camera) {
-          ball_pos = this.ball_location;
+          ball_pos = mult_vec(this.ball_transform, vec4(0, 0, 0, 1));
           this.graphics_state.camera_transform = lookAt(
             [ball_pos[0], ball_pos[1] - 20, ball_pos[2]], [ball_pos[0], ball_pos[1], ball_pos[2]], [0, 0, 1]
           );
         }
+
+        this.prev_anim_time = t;
       }
   }, Scene_Component);
 
