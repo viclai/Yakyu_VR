@@ -76,7 +76,6 @@ Declare_Any_Class("Body",
           delta = rotation(t * this.angular_velocity, this.spin_axis);
           // Apply angular velocity - post-multiply to keep rotations together
           this.location_matrix = mult(this.location_matrix, delta);
-          //this.move();   
         }
       },
     'check_if_colliding'(b, a_inv, shape)
@@ -98,16 +97,6 @@ Declare_Any_Class("Body",
       }
   });
 
-Declare_Any_Class("Projectile",
-  {
-    'move'()
-      {
-        var pos = mult_vec(this.location_matrix, vec4(0, 0, 0, 1));
-        //if (pos[3] <= 3)
-
-      },
-  }, Body);
-
 Declare_Any_Class("Baseball_Scene",
   {
     'construct'(context)
@@ -124,8 +113,8 @@ Declare_Any_Class("Baseball_Scene",
             "width"  : 2 * 150, // y
             "height" : 2 * 1    // z
           };
-          var tilesX = 10
-          var tilesY = 10
+          var tilesX = 10;
+          var tilesY = 10;
           var ground = vec3(tile_dimensions.length / 2, tile_dimensions.length / 2, 4);
           var ground_center = identity();
           var surface = mult(ground_center, translation(0, 0, 4));
@@ -144,13 +133,17 @@ Declare_Any_Class("Baseball_Scene",
           var gate_transform;
           var gate_scale = vec3(20, 5, 20);
           var pole;
-          var pole_scale = vec3(5, 5, 500);
+          var pole_scale = vec3(5, 5, 300);
+          var outfield_gate;
+          var outfield_gate_scale = vec3(100, 5, 100);
 
           // Draw grass
-          for (i = 0; i < tile_dimensions.length * tilesX; i += tile_dimensions.length) {
+          /*for (i = 0; i < tile_dimensions.length * tilesX; i += tile_dimensions.length) {
             for (offset = 0; offset < tile_dimensions.width * tilesY; offset += tile_dimensions.width) {
               tile = mult(ground_center, translation(i, offset, 0));
               oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.grass, tile, ground));
+              if (i / tile_dimensions.length < 3 && offset / tile_dimensions.width < 6)
+                oScene.bodies.ball_collision_items.push(new Body("grass", oScene.shapes.box, oScene.grass, tile, ground));
 
               if (offset !== 0) {
                 tile = mult(ground_center, translation(i, -offset, 0));
@@ -162,6 +155,8 @@ Declare_Any_Class("Baseball_Scene",
               for (offset = 0; offset < tile_dimensions.width * tilesY; offset += tile_dimensions.width) {
                 tile = mult(ground_center, translation(-i, offset, 0));
                 oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.grass, tile, ground));
+                if (i / tile_dimensions.length < 3 && offset / tile_dimensions.width < 6)
+                  oScene.bodies.ball_collision_items.push(new Body("grass", oScene.shapes.box, oScene.grass, tile, ground));
 
                 if (offset !== 0) {
                   tile = mult(ground_center, translation(-i, -offset, 0));
@@ -169,7 +164,9 @@ Declare_Any_Class("Baseball_Scene",
                 }
               }
             }
-          }
+          }*/
+          oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.large_grass, ground_center, vec3(1500, 1500, 4)));
+          oScene.bodies.ball_collision_items.push(new Body("grass", oScene.shapes.box, oScene.large_grass, ground_center, vec3(1500, 1500, 4)));
 
           // Draw pitcher's mound
           oScene.bodies.auto.push(new Body("mound", oScene.shapes.ball, oScene.infield_dirt, partial_sphere, mound));
@@ -177,8 +174,9 @@ Declare_Any_Class("Baseball_Scene",
           // Draw baseball diamond
           infield = mult(infield, rotation(45, [0,0,1]));
           oScene.bodies.auto.push(new Body("infield", oScene.shapes.diamond, oScene.infield_dirt, infield, diamond));
+          oScene.bodies.ball_collision_items.push(new Body("infield", oScene.shapes.diamond, oScene.infield_dirt, infield, diamond));
 
-          // Draw baseline and foul poles
+          // Draw baseline, foul poles, and outfield fences
           chalk = mult(surface, translation(-17, 160, .1));
           chalk = mult(chalk, rotation(-45, [0, 0, 1]));
           pole = chalk;
@@ -186,6 +184,26 @@ Declare_Any_Class("Baseball_Scene",
           oScene.bodies.auto.push(new Body("foul_line", oScene.shapes.box, oScene.chalk, chalk, chalk_scale));
           pole = mult(pole, translation(-1000, 0, 0));
           oScene.bodies.auto.push(new Body("foul_pole", oScene.shapes.cylinder, oScene.yellow_paint, pole, pole_scale));
+          outfield_gate = mult(pole, translation(0, 125, -70));
+          outfield_gate = mult(outfield_gate, rotation(90, [0, 0, 1]));
+          outfield_gate = mult(outfield_gate, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          outfield_gate = mult(pole, translation(0, 387, -70));
+          outfield_gate = mult(outfield_gate, rotation(90, [0, 0, 1]));
+          outfield_gate = mult(outfield_gate, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          outfield_gate = mult(pole, translation(0, 650, -70));
+          outfield_gate = mult(outfield_gate, rotation(90, [0, 0, 1]));
+          outfield_gate = mult(outfield_gate, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          outfield_gate = mult(pole, translation(60, 864.5, -70));
+          outfield_gate = mult(outfield_gate, rotation(50, [0, 0, 1]));
+          outfield_gate = mult(outfield_gate, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
 
           chalk = mult(surface, translation(17, 160, .1));
           chalk = mult(chalk, rotation(45, [0, 0, 1]));
@@ -194,21 +212,44 @@ Declare_Any_Class("Baseball_Scene",
           oScene.bodies.auto.push(new Body("foul_line", oScene.shapes.box, oScene.chalk, chalk, chalk_scale));
           pole = mult(pole, translation(1000, 0, 0));
           oScene.bodies.auto.push(new Body("foul_pole", oScene.shapes.cylinder, oScene.yellow_paint, pole, pole_scale));
+          outfield_gate = mult(pole, translation(0, 125, -70));
+          outfield_gate = mult(outfield_gate, rotation(-90, [0, 0, 1]));
+          outfield_gate = mult(outfield_gate, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          outfield_gate = mult(pole, translation(0, 387, -70));
+          outfield_gate = mult(outfield_gate, rotation(-90, [0, 0, 1]));
+          outfield_gate = mult(outfield_gate, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          outfield_gate = mult(pole, translation(0, 650, -70));
+          outfield_gate = mult(outfield_gate, rotation(-90, [0, 0, 1]));
+          outfield_gate = mult(outfield_gate, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          outfield_gate = mult(pole, translation(-60, 864.5, -70));
+          outfield_gate = mult(outfield_gate, rotation(-50, [0, 0, 1]));
+          outfield_gate = mult(outfield_gate, rotation(45, [0, 1, 0]));
+          oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
 
           // Draw backstop
           gate_transform = mult(gate_start, translation(0, 0, 25));
           gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
           oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
           
           gate_transform = mult(gate_start, translation(63 * Math.cos(radians(45)), 26 * Math.sin(radians(45)), 25));
           gate_transform = mult(gate_transform, rotation(45, [0, 0, 1]));
           gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
           oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
 
           gate_transform = mult(gate_start, translation(-63 * Math.cos(radians(45)), 26 * Math.sin(radians(45)), 25));
           gate_transform = mult(gate_transform, rotation(-45, [0, 0, 1]));
           gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
           oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
 
           return surface;
         };
@@ -586,6 +627,11 @@ Declare_Any_Class("Baseball_Scene",
               Color(0, 0, 0, 1), 1, 1, 0, 40, 
               context.textures_in_use["grass.jpg"]
             ),
+          large_grass  :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(0, 0, 0, 1), 1, 1, 0, 40, 
+              context.textures_in_use["large_grass.png"]
+            ),
           wood         :
             context.shaders_in_use["Phong_Model"].material(
               Color(0, 0, 0, 1), 1, 1, 0, 40
@@ -637,7 +683,12 @@ Declare_Any_Class("Baseball_Scene",
           ball_camera         : false,
           ball_collision_objs : [],
           graphics_state      : context.globals.graphics_state,
-          bodies              : { "auto" : [], "manual" : [] },
+          bodies              : { 
+            "auto"                 : [],
+            "manual"               : [],
+            "baseball"             : null,
+            "ball_collision_items" : []
+          },
           collider            : new Subdivision_Sphere(1),
           prev_anim_time      : 0.0,
           gravity             : 0.00001 * -9.8
@@ -689,18 +740,18 @@ Declare_Any_Class("Baseball_Scene",
             [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
           );
         });*/
-        /*controls.add("l", this, function() { // Left field
+        controls.add("l", this, function() { // Left field
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+            [-572, 757, 15], [-572, 800, 15], [0, 0, 1] // TODO
           );
-        });*/
-        /*controls.add("c", this, function() { // Center field
+        });
+        controls.add("c", this, function() { // Center field
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+            [29.75, 1114, 15], [29.75, 1120, 15], [0, 0, 1] // TODO
           );
-        });*/
+        });
         /*controls.add("r", this, function() { // Right field
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
@@ -945,6 +996,7 @@ Declare_Any_Class("Baseball_Scene",
             bat = mult(bat, rotation(-45, [0, 0, 1]));
             bat = mult(bat, rotation(180, [1, 0, 0]));
             oScene.bodies.manual.push(new Body("bat", oScene.shapes.bat, oScene.wood, bat, vec3(2, 2, 2)));
+            oScene.bodies.ball_collision_items.push(new Body("bat", oScene.shapes.bat, oScene.wood, bat, vec3(2, 2, 2)));
             bat = mult(bat, scale(7, 7, 7));
             oScene.shapes.bat.draw(graphics_state, bat, oScene.wood);
 
@@ -1116,13 +1168,25 @@ Declare_Any_Class("Baseball_Scene",
                   );
                 }
                 else {
-                  oScene.bodies.auto.push(new Body(
+                  /*oScene.bodies.auto.push(new Body(
                     "baseball",
                     oScene.shapes.ball,
                     oScene.cork_stitch,
                     oScene.ball_transform,
                     vec3(.75, .75, .75),
                     vec3(0, -.05, 0),
+                    vec3(0, 0, oScene.gravity),
+                    1,
+                    0,
+                    vec3(0, 1, 0)
+                  ));*/
+                  oScene.bodies.baseball = (new Body(
+                    "baseball",
+                    oScene.shapes.ball,
+                    oScene.cork_stitch,
+                    oScene.ball_transform,
+                    vec3(.75, .75, .75),
+                    vec3(0, -.035, 0),
                     vec3(0, 0, oScene.gravity),
                     1,
                     0,
@@ -1249,6 +1313,8 @@ Declare_Any_Class("Baseball_Scene",
         var model_transform = identity();
         var t = graphics_state.animation_time;
         var ball_pos;
+        var collider;
+        var b_inv;
 
         graphics_state.lights = [
           new Light(vec4(0, 500, 1000, 1), Color(1, 1, 1, 1), 900000)
@@ -1262,32 +1328,82 @@ Declare_Any_Class("Baseball_Scene",
 
         for (let b of this.bodies.auto) {
           b.shape.draw(graphics_state, mult(b.location_matrix, scale(b.scale)), b.material);
-          if (t > this.prev_anim_time) {
-            b.advance(graphics_state.animation_delta_time);
+        }
 
-            if (b.name === "baseball") {
-              this.ball_transform = b.location_matrix;
-            }
-          }
+        if (this.bodies.baseball != null)
+          this.bodies.baseball.shape.draw(graphics_state, mult(this.bodies.baseball.location_matrix, scale(this.bodies.baseball.scale)), this.bodies.baseball.material);
+
+        if (t > this.prev_anim_time && this.bodies.baseball != null) {
+          console.log(graphics_state.animation_delta_time);
+          this.bodies.baseball.advance(graphics_state.animation_delta_time);
+          this.ball_transform = this.bodies.baseball.location_matrix;
         }
 
         ball_pos = mult_vec(this.ball_transform, vec4(0, 0, 0, 1));
 
+        if (t > this.prev_anim_time && this.bodies.baseball != null) {
+          for (let b of this.bodies.ball_collision_items) {
+            b_inv = inverse(mult(b.location_matrix, scale(b.scale)));
+
+            if (b.shape == this.shapes.box || b.shape == this.shapes.bat)
+              collider = this.collider;
+            else
+              collider = b.shape;
+
+            if (b.check_if_colliding(this.bodies.baseball, b_inv, collider)) {
+              if (b.name === "grass" || b.name === "infield") {
+                console.log("Collided with ground!");
+
+                this.bodies.baseball.linear_velocity[2] = -.5 * this.bodies.baseball.linear_velocity[2]; // Ground normal force
+
+                if (ball_pos[2] <= 5 && this.bodies.baseball.linear_velocity[2] === 0) {
+                  console.log("Grounded!")
+                  this.bodies.baseball.linear_acceleration[2] = 0;
+                }
+                else
+                  this.bodies.baseball.linear_acceleration[2] = this.gravity;
+
+                // Ground friction
+                if (this.bodies.baseball.linear_velocity[1] !== 0)
+                  this.bodies.baseball.linear_acceleration[1] = -.0005;
+                if (this.bodies.baseball.linear_velocity[0] !== 0)
+                  this.bodies.baseball.linear_acceleration[0] = .0005;
+
+              } else if (b.name === "bat") {
+                console.log("Collided with bat!");
+                this.bodies.baseball.linear_velocity[0] = -.015;
+                this.bodies.baseball.linear_velocity[1] = -.8 * this.bodies.baseball.linear_velocity[1];
+                this.bodies.baseball.linear_velocity[2] = .001 + this.bodies.baseball.linear_velocity[2];
+                this.bodies.baseball.angular_velocity = -this.bodies.baseball.angular_velocity;
+              } else if (b.name === "fence") {
+                console.log("Collided with fence!");
+                this.bodies.baseball.linear_velocity[1] = 0;
+                this.bodies.baseball.linear_velocity[0] = 0;
+              }
+            }
+          }
+        }
+
         // Collision detection
-        if (t > this.prev_anim_time) {
-          console.log("Animation is on");
+        /*if (t > this.prev_anim_time) {
           for (let b of this.bodies.manual.concat(this.bodies.auto)) {
             var b_inv = inverse(mult(b.location_matrix, scale(b.scale)));
              
             for (let c of this.bodies.manual.concat(this.bodies.auto)) {
               if (c.name === "baseball") {
-                if (b.check_if_colliding(c, b_inv, this.collider)) {
+
+                if (b.shape == this.shapes.box || b.shape == this.shapes.bat)
+                  collider = this.collider;
+                else
+                  collider = b.shape;
+
+                if (b.check_if_colliding(c, b_inv, collider)) {
                   if (b.name === "grass" || b.name === "infield" || b.name === "mound") {
                     console.log("Collided with ground!");
 
                     c.linear_velocity[2] = -.5 * c.linear_velocity[2]; // Ground normal force
 
-                    if (ball_pos[2] <= 7 && c.linear_velocity[2] === 0)
+                    if (ball_pos[2] <= 5 && c.linear_velocity[2] === 0)
                       c.linear_acceleration[2] = 0;
                     else
                       c.linear_acceleration[2] = this.gravity;
@@ -1306,13 +1422,14 @@ Declare_Any_Class("Baseball_Scene",
                     c.angular_velocity = -c.angular_velocity;
                   } else if (b.name === "fence") {
                     console.log("Collided with fence!");
-                    c.linear_velocity = vec3();
+                    c.linear_velocity[1] = 0;
+                    c.linear_velocity[0] = 0;
                   }
                 }
               }
             }
           }
-        }
+        }*/
 
         if (this.ball_camera) {
           ball_pos = mult_vec(this.ball_transform, vec4(0, 0, 0, 1));
