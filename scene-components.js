@@ -25,20 +25,27 @@ Declare_Any_Class("Body",
                 la = vec3(), av = 0, aa = 0, spin_axis = vec3(1, 0, 0))
       {
         this.define_data_members({
-          name                 : name,
-          shape                : s,
-          material             : m,
-          scale                : scale,
-          location_matrix      : loc, 
-          linear_velocity      : lv,
-          linear_acceleration  : la,
-          angular_velocity     : av,
-          angular_acceleration : aa,
-          spin_axis            : spin_axis
+          name                  : name,
+          shape                 : s,
+          material              : m,
+          scale                 : scale,
+          location_matrix       : loc, 
+          linear_velocity       : lv,
+          linear_acceleration   : la,
+          angular_velocity      : av,
+          angular_acceleration  : aa,
+          spin_axis             : spin_axis,
+
+          prev_location_matrix  : null,
+          prev_linear_velocity  : null,
+          prev_angular_velocity : null,
+          collided_last_frame   : false,
+          collision_history     : [{"name":null, "collided":null}, {"name":null, "collided":null}]
         });
       },
     'advance'(t) // Do one timestep.
       {
+        this.prev_location_matrix = this.location_matrix;
         if (Array.isArray(t) && t.length == 4) {
           this.location_matrix = t;
         } else {
@@ -67,6 +74,7 @@ Declare_Any_Class("Body",
             this.linear_velocity,
             this.linear_acceleration
           );
+          this.prev_linear_velocity = this.linear_velocity;
           // Move proportionally to real time.
           delta = translation(scale_vec(t, this.linear_velocity));
           // Apply linear velocity - pre-multiply to keep translations together
@@ -76,6 +84,7 @@ Declare_Any_Class("Body",
           delta = rotation(t * this.angular_velocity, this.spin_axis);
           // Apply angular velocity - post-multiply to keep rotations together
           this.location_matrix = mult(this.location_matrix, delta);
+          this.prev_angular_velocity = this.angular_velocity;
         }
       },
     'check_if_colliding'(b, a_inv, shape)
@@ -94,12 +103,146 @@ Declare_Any_Class("Body",
             return true;
         }
         return false;
+      },
+    'check_if_collided_with_plane'(b, a_inv, shape) // b is stationary
+      {
+        var intersect = function(point1, point2, plane) {
+          var x1 = point1[0];
+          var y1 = point1[1];
+          var z1 = point1[2];
+
+          var x2 = point2[0];
+          var y2 = point2[1];
+          var z2 = point2[2];
+
+          var a = plane[0];
+          var b = plane[1];
+          var c = plane[2];
+          var d = plane[3];
+
+          var t = (d - (x1 * a) - (y1 * b) - (z1 * c)) / ((x2 * a) + (y2 * b) + (z2 * c) - (x1 * a) - (y1 * b) - (z1 * c));
+          var px = x1 + (t * (x2 - x1));
+          var py = y1 + (t * (y2 - y1));
+          var pz = z1 + (t * (z2 - z1));
+          return [px, py, pz];
+        }
+
+        var dist = function(point1, point2) {
+          var x1 = point1[0];
+          var y1 = point1[1];
+          var z1 = point1[2];
+
+          var x2 = point2[0];
+          var y2 = point2[1];
+          var z2 = point2[2];
+
+          var zDiff = z2 - z1;
+          var yDiff = y2 - y1;
+          var xDiff = x2 - x1;
+          var radicant = zDiff * zDiff + yDiff * yDiff + xDiff * xDiff;
+          var result = Math.pow(radicant, 0.5);
+          return result;
+        }
+
+        //console.log("Inside checking collision");
+        var i;
+        var p1 = mult_vec(this.prev_location_matrix, vec4(0, 0, 0, 1)).slice(0, 3);
+        if (b.name == "fence1") {
+          console.log("p1: ");
+          console.log(p1);
+        }
+        var p2 = mult_vec(this.location_matrix, vec4(0, 0, 0, 1)).slice(0, 3);
+        if (b.name == "fence1") {
+          console.log("p2: ");
+          console.log(p2);
+        }
+        var pVec = subtract(p1, p2);
+        //console.log("pVec: ");
+        //console.log(pVec);
+        var bCenter = mult_vec(b.location_matrix, vec4(0, 0, 0, 1)).slice(0, 3);
+        if (b.name == "fence1") {
+          console.log("bCenter: ");
+          console.log(bCenter);
+        }
+        var d = -((pVec[0] * -bCenter[0]) + (pVec[1] * - bCenter[1]) + (pVec[2] * -bCenter[2])); // Last component of plane
+        var intersection = intersect(p1, p2, pVec.concat(d));
+        if (b.name == "fence1") {
+          console.log("Intersection: ");
+          console.log(intersection);
+        }
+        var new_loc = translation(intersection);
+        var new_a_inv = inverse(mult(new_loc, scale(this.scale)));
+        var insideObj = false;
+        var b_inv = inverse(mult( b.location_matrix, scale(b.scale)));
+        //var T = mult(new_a_inv, mult(b.location_matrix, scale(b.scale)));
+        var T = mult(b_inv, mult(new_loc, scale(this.scale)));
+        for (let p of shape.positions) { // For each vertex in that b,
+          // Apply a_inv*b coordinate frame shift
+          var Tp = mult_vec(T, p.concat(1)).slice(0, 3);
+
+          // Check if in that coordinate frame it penetrates the unit sphere
+          // at the origin.
+          if (dot(Tp, Tp) < 1.2) {
+            insideObj = true;
+            break;
+          }
+        }
+
+        // Check that intersection point is between the two points
+        //if (b.name == "fence1")
+          //console.log("Distance 1: ");
+        //if (b.name == "fence1")
+          //console.log(dist(p1, intersection));
+        //if (b.name == "fence1")
+          //console.log("Distance 2: ");
+        //if (b.name == "fence1")
+          //console.log(dist(intersection, p2));
+        //if (b.name == "fence1")
+          //console.log("Real total distance: ");
+        //if (b.name == "fence1")
+          //console.log(dist(p1, p2));
+        //if (this.collided_last_frame && dist(p1, bCenter) < dist(p2, bCenter))
+          //return false;
+        var betweenPoints = dist(p1, intersection) + dist(intersection, p2) === dist(p1, p2);
+        //if (b.name == "fence1")
+          //console.log("Between points: " + betweenPoints);
+        //if (betweenPoints && (b.name == "fence1")) {
+          //console.log("p1: " + p1);
+          //console.log("Intersection: " + intersection);
+          //console.log("p2: " + p2);
+        //}
+        if (betweenPoints && insideObj) {
+          //console.log(this.collision_history);
+          if (this.collision_history[1].name == b.name && this.collision_history[1].collided == true) {
+            console.log("Prevented double collision");
+            return false;
+          }
+          console.log("reverted");
+          this.location_matrix = this.prev_location_matrix;
+          this.linear_velocity = this.prev_linear_velocity;
+          this.angular_velocity = this.prev_angular_velocity;
+          return true;
+        }
+        else {
+          return false;
+        }
+      },
+    'collided'(b, a_inv, shape)
+      {
+        var res;
+        res = this.check_if_colliding(b, a_inv, shape) || this.check_if_collided_with_plane(b, a_inv, shape);
+        this.collided_last_frame = res;
+        if (res) {
+          this.collision_history.push({"name": b.name, "collided":res});
+          this.collision_history.shift();
+        }
+        return res;
       }
   });
 
 Declare_Any_Class("Baseball_Scene",
   {
-    'construct'(context)
+    'construct'(context, canvas = context.canvas)
       {
         /*
          * Draws the baseball field.
@@ -166,7 +309,7 @@ Declare_Any_Class("Baseball_Scene",
             }
           }*/
           oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.large_grass, ground_center, vec3(1500, 1500, 4)));
-          oScene.bodies.ball_collision_items.push(new Body("grass", oScene.shapes.box, oScene.large_grass, ground_center, vec3(1500, 1500, 4)));
+          //oScene.bodies.ball_collision_items.push(new Body("grass", oScene.shapes.box, oScene.large_grass, ground_center, vec3(1500, 1500, 4)));
 
           // Draw pitcher's mound
           oScene.bodies.auto.push(new Body("mound", oScene.shapes.ball, oScene.infield_dirt, partial_sphere, mound));
@@ -174,7 +317,7 @@ Declare_Any_Class("Baseball_Scene",
           // Draw baseball diamond
           infield = mult(infield, rotation(45, [0,0,1]));
           oScene.bodies.auto.push(new Body("infield", oScene.shapes.diamond, oScene.infield_dirt, infield, diamond));
-          oScene.bodies.ball_collision_items.push(new Body("infield", oScene.shapes.diamond, oScene.infield_dirt, infield, diamond));
+          //oScene.bodies.ball_collision_items.push(new Body("infield", oScene.shapes.diamond, oScene.infield_dirt, infield, diamond));
 
           // Draw baseline, foul poles, and outfield fences
           chalk = mult(surface, translation(-17, 160, .1));
@@ -237,7 +380,7 @@ Declare_Any_Class("Baseball_Scene",
           gate_transform = mult(gate_start, translation(0, 0, 25));
           gate_transform = mult(gate_transform, rotation(45, [0, 1, 0]));
           oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
-          oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
+          oScene.bodies.ball_collision_items.push(new Body("fence1", oScene.shapes.fence, oScene.chain, gate_transform, gate_scale));
           
           gate_transform = mult(gate_start, translation(63 * Math.cos(radians(45)), 26 * Math.sin(radians(45)), 25));
           gate_transform = mult(gate_transform, rotation(45, [0, 0, 1]));
@@ -679,24 +822,105 @@ Declare_Any_Class("Baseball_Scene",
           // Miscellaneous
           surface             : null,
           ball_free           : false,
-          ball_transform      : identity(),
+          ball_transform      : translation(0, 0, 10),//identity(),
           ball_camera         : false,
-          ball_collision_objs : [],
-          graphics_state      : context.globals.graphics_state,
           bodies              : { 
             "auto"                 : [],
-            "manual"               : [],
+            //"manual"               : [],
             "baseball"             : null,
-            "ball_collision_items" : []
+            "ball_collision_items" : [],
+            "bat"                  : null
           },
           collider            : new Subdivision_Sphere(1),
           prev_anim_time      : 0.0,
-          gravity             : 0.00001 * -9.8
+          ball_start_time     : 0,
+          events              : [
+            {
+              "contact_x_velocity" : { "value" : -.15, "isFactor" : false },
+              "contact_y_velocity" : { "value" : -.8, "isFactor" : true }, // Multiply
+              "contact_z_velocity" : { "value" : .01, "isFactor" : true }, // Add
+              "release_y_velocity" : { "value" : -.06, "isFactor" : false },
+              "gravity"            : { "value" : 0.00001 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : .0005, "isFactor": false },
+              "friction_y_acceleration" : { "value" : -.0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.5, "isFactor": true } // Multiply
+            },
+            {
+              "contact_x_velocity" : { "value" : .05, "isFactor" : false},
+              "contact_y_velocity" : { "value" : -.8, "isFactor" : true}, // Multiply
+              "contact_z_velocity" : { "value" : .01, "isFactor" : true}, // Add
+              "release_y_velocity" : { "value" : -.09, "isFactor" : false},
+              "gravity"            : { "value" : 0.00001 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : -.0005, "isFactor": false },
+              "friction_y_acceleration" : { "value" : -.0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.5, "isFactor": true } // Multiply
+            }
+          ]
         });
+
+        context.globals.graphics_state.set(
+          lookAt([4.6, 339, 15], [0, 260, 15], [0, 0, 1]),
+          perspective(45, context.width/context.height, .1, 1000),
+          0
+        );
+        this.define_data_members({
+          graphics_state : context.globals.graphics_state,
+          thrust         : vec3(),
+          origin         : vec3(0, 0, 0),
+          looking        : false
+        });
+
+        // *** Mouse controls: ***
+        this.mouse = { "from_center": vec2() }; // Measure mouse steering, for rotating the fly-around camera:
+        var mouse_position = function(e) {
+          return vec2(e.clientX - context.width/2, e.clientY - context.height/2);
+        };   
+        canvas.addEventListener("mouseup", (function(self) {
+          return function(e) {
+            e = e || window.event;
+            self.mouse.anchor = undefined;
+          }
+        }) (this), false);
+        canvas.addEventListener("mousedown", (function(self) {
+          return function(e) {
+            e = e || window.event;
+            self.mouse.anchor = mouse_position(e);
+          }
+        }) (this), false);
+        canvas.addEventListener("mousemove", (function(self) {
+          return function(e) {
+            e = e || window.event;
+            self.mouse.from_center = mouse_position(e);
+          }
+        }) (this), false);
+        canvas.addEventListener("mouseout", (function(self) { // Stop steering if the
+          return function(e) {                                // mouse leaves the canvas.
+            self.mouse.from_center = vec2();
+          };
+        }) (this), false);
+
+        this.origin = mult_vec(
+            inverse(this.graphics_state.camera_transform),
+            vec4(0,0,0,1)
+          ).slice(0,3);
 
         this.surface = draw_field(this);
         draw_batter(this, this.surface);
         draw_fielder(this, this.surface);
+        this.bodies.bat = (new Body("bat", this.shapes.bat, this.wood, null, vec3(2, 2, 2)));
+        
+        /*this.bodies.baseball = (new Body(
+                    "baseball",
+                    this.shapes.ball,
+                    this.cork_stitch,
+                    translation(0, 80, 10),
+                    vec3(.75, .75, .75),
+                    vec3(0, -.05, 0),
+                    vec3(0, 0, 0),
+                    1,
+                    0,
+                    vec3(0, 1, 0)
+                  ));*/
       },
     'init_keys'(controls)
       {
@@ -704,67 +928,108 @@ Declare_Any_Class("Baseball_Scene",
           this.ball_camera = true;
         });
 
-        controls.add("p", this, function() { // Pitcher's mound
-          this.ball_camera = false;
-          this.graphics_state.camera_transform = lookAt(
-            [4.6, 339, 15], [0, 260, 15], [0, 0, 1]
-          );
-        });
-        controls.add("h", this, function() { // Home plate
-          this.ball_camera = false;
-          this.graphics_state.camera_transform = lookAt(
-            [-.6, 81, 15], [0, 90, 15], [0, 0, 1]
-          );
-        });
-        controls.add("3", this, function() { // 3rd base
-          this.ball_camera = false;
-          this.graphics_state.camera_transform = lookAt(
-            [-193, 372, 15], [-.6, 81, 15], [0, 0, 1]
-          );
-        });
-        controls.add("1", this, function() { // 1st base
-          this.ball_camera = false;
-          this.graphics_state.camera_transform = lookAt(
-            [190, 379, 15], [-.6, 81, 15], [0, 0, 1]
-          );
-        });
-        controls.add("2", this, function() { // 2nd base
-          this.ball_camera = false;
-          this.graphics_state.camera_transform = lookAt(
-            [127, 485, 15], [-.6, 81, 15], [0, 0, 1]
-          );
-        });
-        /*controls.add("s", this, function() { // Shortstop
-          this.ball_camera = false;
-          this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
-          );
-        });*/
-        controls.add("l", this, function() { // Left field
-          this.ball_camera = false;
-          this.graphics_state.camera_transform = lookAt(
-            [-572, 757, 15], [-572, 800, 15], [0, 0, 1] // TODO
-          );
-        });
-        controls.add("c", this, function() { // Center field
-          this.ball_camera = false;
-          this.graphics_state.camera_transform = lookAt(
-            [29.75, 1114, 15], [29.75, 1120, 15], [0, 0, 1] // TODO
-          );
-        });
-        /*controls.add("r", this, function() { // Right field
-          this.ball_camera = false;
-          this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
-          );
-        });*/
         controls.add("m", this, function() { // TODO: Remove later!
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [.7, 223, 15], [0, 300, 15], [0, 0, 1]
           );
         });
+
+        // TODO: Remove these later!
+        controls.add("Space", this, function() { this.thrust[1] = -1; });
+        controls.add("Space", this, function() { this.thrust[1] =  0; }, {'type':'keyup'});
+        controls.add("z",     this, function() { this.thrust[1] =  1; });
+        controls.add("z",     this, function() { this.thrust[1] =  0; }, {'type':'keyup'});
+        controls.add("w",     this, function() { this.thrust[2] =  1; });
+        controls.add("w",     this, function() { this.thrust[2] =  0; }, {'type':'keyup'});
+        controls.add("a",     this, function() { this.thrust[0] =  1; } );
+        controls.add("a",     this, function() { this.thrust[0] =  0; }, {'type':'keyup'});
+        controls.add("s",     this, function() { this.thrust[2] = -1; } );
+        controls.add("s",     this, function() { this.thrust[2] =  0; }, {'type':'keyup'});
+        controls.add("d",     this, function() { this.thrust[0] = -1; } );
+        controls.add("d",     this, function() { this.thrust[0] =  0; }, {'type':'keyup'});
+        controls.add("o", this, function() {
+          this.origin = mult_vec(
+            inverse(this.graphics_state.camera_transform),
+            vec4(0,0,0,1)
+          ).slice(0,3);
+        });
+
+        controls.add("1", this, function() { // Pitcher's mound
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [4.6, 339, 15], [0, 260, 15], [0, 0, 1]
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });
+        controls.add("2", this, function() { // Home plate
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [-.6, 81, 15], [0, 90, 15], [0, 0, 1]
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });
+        controls.add("3", this, function() { // 1st base
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [190, 379, 15], [-.6, 81, 15], [0, 0, 1]
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });
+        controls.add("4", this, function() { // 2nd base
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [127, 485, 15], [-.6, 81, 15], [0, 0, 1]
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });
+        controls.add("5", this, function() { // 3rd base
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [-193, 372, 15], [-.6, 81, 15], [0, 0, 1]
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });
+        /*controls.add("6", this, function() { // Shortstop
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });*/
+        controls.add("7", this, function() { // Left field
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [-572, 757, 15], [-572, 800, 15], [0, 0, 1] // TODO
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });
+        controls.add("8", this, function() { // Center field
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [29.75, 1114, 15], [29.75, 1120, 15], [0, 0, 1] // TODO
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });
+        /*controls.add("9", this, function() { // Right field
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });*/
       },
+    /*'update_strings'(user_interface_string_manager) // Strings that this Scene_Component contributes to the UI:
+      {
+        var C_inv = inverse(this.graphics_state.camera_transform), pos = mult_vec(C_inv, vec4( 0, 0, 0, 1 )),
+                                                                  z_axis = mult_vec(C_inv, vec4( 0, 0, 1, 0 ));
+        user_interface_string_manager.string_map["origin" ] = "Center of rotation: " 
+                                                              + this.origin[0].toFixed(0) + ", " + this.origin[1].toFixed(0) + ", " + this.origin[2].toFixed(0);
+        user_interface_string_manager.string_map["cam_pos"] = "Cam Position: "
+                                                              + pos[0].toFixed(2) + ", " + pos[1].toFixed(2) + ", " + pos[2].toFixed(2);    
+        user_interface_string_manager.string_map["facing" ] = "Facing: " + ( ( z_axis[0] > 0 ? "West " : "East ") // (Actually affected by the left hand rule)
+                                                               + ( z_axis[1] > 0 ? "Down " : "Up " ) + ( z_axis[2] > 0 ? "North" : "South" ) );
+      },*/
     'display'(graphics_state)
       {
         /*
@@ -883,7 +1148,7 @@ Declare_Any_Class("Baseball_Scene",
          *                              surface of the ground.
          * @param {Number}   iTime    - The scaled animation time.
          */
-        var draw_batter = function(oScene, mSurface, iTime) {
+        var draw_batter = function(oScene, mSurface, iTime, oEvent) {
           var body_top;
           var head_top;
           var helmet_center;
@@ -961,13 +1226,13 @@ Declare_Any_Class("Baseball_Scene",
               var draw_hand = function(oScene, mPos) {
                 var hand_radius = 1;
                 var hand_center = mult(mPos, translation(0, 0, -hand_radius));
-                oScene.bodies.manual.push(new Body("hand", oScene.shapes.sphere, oScene.skin, hand_center));
+                //oScene.bodies.manual.push(new Body("hand", oScene.shapes.sphere, oScene.skin, hand_center));
                 oScene.shapes.sphere.draw(graphics_state, hand_center, 
                   oScene.skin);
               };
 
               draw_hand(oScene, mult(arm, translation(0, 0, -armScale * .5)));
-              oScene.bodies.manual.push(new Body("arm", oScene.shapes.tube, oScene.cloth, arm, vec3(1, 1, armScale)));
+              //oScene.bodies.manual.push(new Body("arm", oScene.shapes.tube, oScene.cloth, arm, vec3(1, 1, armScale)));
               arm = mult(arm, scale(1, 1, armScale));
               oScene.shapes.tube.draw(graphics_state, arm, oScene.cloth);
             };
@@ -978,7 +1243,7 @@ Declare_Any_Class("Baseball_Scene",
             body = mult(body, scale(bodyScale, bodyScale, zScale));
             //oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
 
-            rotAngle = .03 * iTime;
+            rotAngle = .04 * (iTime - oScene.ball_start_time);
             if (rotAngle >= 180)
               rotAngle = 180;
             swing = mult(bodyTop, rotation(rotAngle, [0, 0, 1]));
@@ -995,8 +1260,9 @@ Declare_Any_Class("Baseball_Scene",
             bat = mult(bat, translation(-2, -1.5, -1.5));
             bat = mult(bat, rotation(-45, [0, 0, 1]));
             bat = mult(bat, rotation(180, [1, 0, 0]));
-            oScene.bodies.manual.push(new Body("bat", oScene.shapes.bat, oScene.wood, bat, vec3(2, 2, 2)));
-            oScene.bodies.ball_collision_items.push(new Body("bat", oScene.shapes.bat, oScene.wood, bat, vec3(2, 2, 2)));
+            //oScene.bodies.manual.push(new Body("bat", oScene.shapes.bat, oScene.wood, bat, vec3(2, 2, 2)));
+            //oScene.bodies.ball_collision_items.push(new Body("bat", oScene.shapes.bat, oScene.wood, bat, vec3(2, 2, 2)));
+            oScene.bodies.bat.location_matrix = bat;
             bat = mult(bat, scale(7, 7, 7));
             oScene.shapes.bat.draw(graphics_state, bat, oScene.wood);
 
@@ -1071,7 +1337,7 @@ Declare_Any_Class("Baseball_Scene",
          *                              surface of the ground.
          * @param {Number}   iTime    - The scaled animation time.
          */
-        var draw_fielder = function(oScene, mSurface, iTime) {
+        var draw_fielder = function(oScene, mSurface, iTime, oEvent) {
           var body_top;
           var head_center;
           var head_dimensions = {
@@ -1117,7 +1383,7 @@ Declare_Any_Class("Baseball_Scene",
            * @returns {Object[]} The transformation matrix for the top of
            *                     the body.
            */
-          var draw_body = function(oScene, mSurface, iTime) {
+          var draw_body = function(oScene, mSurface, iTime, oEvent) {
             var body;
             var zScale = 8;
             var bodyScale = 6;
@@ -1138,7 +1404,7 @@ Declare_Any_Class("Baseball_Scene",
              *                             position to draw the arm.
              * @param {boolean}  bIsLeft - The hand to draw is the left.
              */
-            var draw_arm = function(oScene, mPos, bIsLeft, iTime) {
+            var draw_arm = function(oScene, mPos, bIsLeft, iTime, oEvent) {
               var arm = mPos;
               var armScale = 8;
 
@@ -1148,19 +1414,19 @@ Declare_Any_Class("Baseball_Scene",
                * @param {Object[]} mPos    - The transformation matrix to the
                *                             position to draw the hand.
                */
-              var draw_hand = function(oScene, mPos, iTime) {
+              var draw_hand = function(oScene, mPos, iTime, oEvent) {
                 var hand_radius = 1;
                 var hand_center = mult(mPos, translation(0, 0, -hand_radius));
                 var ball_transform;
 
-                oScene.bodies.manual.push(new Body("hand", oScene.shapes.sphere, oScene.skin, hand_center));
+                //oScene.bodies.manual.push(new Body("hand", oScene.shapes.sphere, oScene.skin, hand_center));
                 oScene.shapes.sphere.draw(graphics_state, hand_center,
                   oScene.skin);
 
                 if (oScene.ball_free)
                   return;
 
-                if (.05 * iTime < 90) {
+                if (.05 * (iTime - oScene.ball_start_time) < 90) {
                   ball_transform = mult(hand_center, translation(
                     0,
                     -(hand_radius + .2),
@@ -1180,14 +1446,17 @@ Declare_Any_Class("Baseball_Scene",
                     0,
                     vec3(0, 1, 0)
                   ));*/
+
+                  // Uncomment this later
+                  
                   oScene.bodies.baseball = (new Body(
                     "baseball",
                     oScene.shapes.ball,
                     oScene.cork_stitch,
                     oScene.ball_transform,
                     vec3(.75, .75, .75),
-                    vec3(0, -.035, 0),
-                    vec3(0, 0, oScene.gravity),
+                    vec3(0, oEvent.release_y_velocity.value, 0),
+                    vec3(0, 0, oEvent.gravity.value),
                     1,
                     0,
                     vec3(0, 1, 0)
@@ -1195,12 +1464,15 @@ Declare_Any_Class("Baseball_Scene",
                   oScene.ball_free = true;
                   return;
                 }
-                oScene.bodies.manual.push(new Body("baseball",
+                /*oScene.bodies.manual.push(new Body("baseball",
                   oScene.shapes.ball,
                   oScene.cork_stitch,
                   ball_transform,
                   vec3(.75, .75, .75)
-                ));
+                ));*/
+
+                // Uncomment this later
+                
                 oScene.ball_transform = ball_transform;
                 ball_transform = mult(ball_transform, scale(.75, .75, .75));
 
@@ -1212,8 +1484,8 @@ Declare_Any_Class("Baseball_Scene",
               };
 
               if (!bIsLeft)
-                draw_hand(oScene, mult(arm, translation(0, 0, -armScale * .5)), iTime);
-              oScene.bodies.manual.push(new Body("arm", oScene.shapes.tube, oScene.cloth, arm, vec3(1, 1, armScale)));
+                draw_hand(oScene, mult(arm, translation(0, 0, -armScale * .5)), iTime, oEvent);
+              //oScene.bodies.manual.push(new Body("arm", oScene.shapes.tube, oScene.cloth, arm, vec3(1, 1, armScale)));
               arm = mult(arm, scale(1, 1, armScale));
               oScene.shapes.tube.draw(graphics_state, arm, oScene.cloth);
             };
@@ -1224,12 +1496,12 @@ Declare_Any_Class("Baseball_Scene",
             body = mult(body, scale(bodyScale, bodyScale, zScale));
             //oScene.shapes.tube.draw(graphics_state, body, oScene.cloth);
 
-            rotAngle = .05 * iTime;
+            rotAngle = .05 * (iTime - oScene.ball_start_time);
             if (rotAngle >= 135)
               rotAngle = 135;
             throwMotion = mult(bodyTop, rotation(rotAngle, [1, 0, 0]));
 
-            rotAngle = (.05 * iTime);
+            rotAngle = (.05 * (iTime - oScene.ball_start_time));
             if (rotAngle >= 90)
               rotAngle = 90;
             gloveMotion = mult(bodyTop, rotation(rotAngle, [0, 0, 1]));
@@ -1241,14 +1513,14 @@ Declare_Any_Class("Baseball_Scene",
             glove = mult(leftHinge, translation((-bodyScale * 0.7)-2, -1, 0));
             glove = mult(glove, mult(rotation(-180, [0, 1, 0]), rotation(-90, [0, 0, 1])));
             glove = mult(glove, rotation(-90, [0,1,0]));
-            oScene.bodies.manual.push(new Body("mitt", oScene.shapes.mitt, oScene.leather, glove, vec3(1.5, 1.5, 1.5)));
+            //oScene.bodies.manual.push(new Body("mitt", oScene.shapes.mitt, oScene.leather, glove, vec3(1.5, 1.5, 1.5)));
             glove = mult(glove, scale(1.5, 1.5, 1.5));
             oScene.shapes.mitt.draw(graphics_state, glove, oScene.leather);
 
             rot1 = rotation(90, [0, 1, 0]);
-            draw_arm(oScene, mult(leftHinge, rot1), true, iTime);
+            draw_arm(oScene, mult(leftHinge, rot1), true, iTime, oEvent);
             rot2 = mult(rotation(90, [0, 1, 0]), rotation(45, [1, 0, 0]));
-            draw_arm(oScene, mult(rightHinge, rot2), false, iTime);
+            draw_arm(oScene, mult(rightHinge, rot2), false, iTime, oEvent);
 
             return bodyTop;
           };
@@ -1290,7 +1562,7 @@ Declare_Any_Class("Baseball_Scene",
           };
 
           //draw_shoes(oScene.shapes.half_sphere, oScene.rubber, mSurface);
-          body_top = draw_body(oScene, mSurface, iTime);
+          body_top = draw_body(oScene, mSurface, iTime, oEvent);
           /*head_center = draw_head(oScene.shapes.sphere, oScene.skin, body_top,
             head_dimensions);
 
@@ -1310,21 +1582,31 @@ Declare_Any_Class("Baseball_Scene",
           oScene.shapes.cap.draw(graphics_state, cap_pos, oScene.wool);*/
         };
 
+        var pick_event = function(oScene) {
+          // TODO
+          return oScene.events[1];
+        }
+
         var model_transform = identity();
         var t = graphics_state.animation_time;
         var ball_pos;
         var collider;
+        var a_inv;
         var b_inv;
+        var collision_items;
+        var event;
 
         graphics_state.lights = [
           new Light(vec4(0, 500, 1000, 1), Color(1, 1, 1, 1), 900000)
         ];
 
-        this.bodies.manual = [];
+        //this.bodies.manual = [];
+
+        event = pick_event(this);
         
         model_transform = this.surface;
         draw_batter(this, model_transform, t);
-        draw_fielder(this, model_transform, t);
+        draw_fielder(this, model_transform, t, event);
 
         for (let b of this.bodies.auto) {
           b.shape.draw(graphics_state, mult(b.location_matrix, scale(b.scale)), b.material);
@@ -1334,107 +1616,79 @@ Declare_Any_Class("Baseball_Scene",
           this.bodies.baseball.shape.draw(graphics_state, mult(this.bodies.baseball.location_matrix, scale(this.bodies.baseball.scale)), this.bodies.baseball.material);
 
         if (t > this.prev_anim_time && this.bodies.baseball != null) {
-          console.log(graphics_state.animation_delta_time);
           this.bodies.baseball.advance(graphics_state.animation_delta_time);
+          //console.log(graphics_state.animation_delta_time);
           this.ball_transform = this.bodies.baseball.location_matrix;
+          //console.log("Position: " + mult_vec(this.ball_transform, vec4(0, 0, 0, 1)));
         }
 
+        collision_items = this.bodies.ball_collision_items.concat(this.bodies.bat);
         ball_pos = mult_vec(this.ball_transform, vec4(0, 0, 0, 1));
 
         if (t > this.prev_anim_time && this.bodies.baseball != null) {
-          for (let b of this.bodies.ball_collision_items) {
+          // Ground collision
+          if (this.bodies.baseball.location_matrix[2][3] < 5.6 && this.bodies.baseball.linear_velocity[2] < 0) {
+            // Ground normal force
+            this.bodies.baseball.linear_velocity[2] = event.normal_z_acceleration.value * this.bodies.baseball.linear_velocity[2];
+
+            // Ground friction
+            if (this.bodies.baseball.linear_velocity[1] !== 0)
+              this.bodies.baseball.linear_acceleration[1] = event.friction_y_acceleration.value;
+            if (this.bodies.baseball.linear_velocity[0] !== 0)
+              this.bodies.baseball.linear_acceleration[0] = event.friction_x_acceleration.value;
+          }
+          else if (this.bodies.baseball.location_matrix[2][3] < 5.6 &&
+                   this.bodies.baseball.linear_velocity[2] == 0 &&
+                   this.bodies.baseball.linear_velocity[1] == 0 &&
+                   this.bodies.baseball.linear_velocity[0] == 0) {
+            this.bodies.baseball.linear_acceleration[2] = 0;
+            this.bodies.baseball.angular_velocity = 0;
+
+            // Reset ball
+            this.ball_free = false;
+            this.bodies.auto.push(this.bodies.baseball);
+            this.ball_start_time = t;
+            this.bodies.baseball = null;
+            return;
+          }
+
+          for (let b of collision_items) {
+            a_inv = inverse(mult(this.bodies.baseball.location_matrix, scale(this.bodies.baseball.scale)));
             b_inv = inverse(mult(b.location_matrix, scale(b.scale)));
 
-            if (b.shape == this.shapes.box || b.shape == this.shapes.bat)
+            //if (b.name === "fence1")
+              //collider = b.shape;
+            //else
               collider = this.collider;
-            else
-              collider = b.shape;
 
-            if (b.check_if_colliding(this.bodies.baseball, b_inv, collider)) {
-              if (b.name === "grass" || b.name === "infield") {
-                console.log("Collided with ground!");
-
-                this.bodies.baseball.linear_velocity[2] = -.5 * this.bodies.baseball.linear_velocity[2]; // Ground normal force
-
-                if (ball_pos[2] <= 5 && this.bodies.baseball.linear_velocity[2] === 0) {
-                  console.log("Grounded!")
-                  this.bodies.baseball.linear_acceleration[2] = 0;
-                }
-                else
-                  this.bodies.baseball.linear_acceleration[2] = this.gravity;
-
-                // Ground friction
-                if (this.bodies.baseball.linear_velocity[1] !== 0)
-                  this.bodies.baseball.linear_acceleration[1] = -.0005;
-                if (this.bodies.baseball.linear_velocity[0] !== 0)
-                  this.bodies.baseball.linear_acceleration[0] = .0005;
-
-              } else if (b.name === "bat") {
+            if (this.bodies.baseball.collided(b, a_inv, collider)) {
+              if (b.name === "bat") {
                 console.log("Collided with bat!");
-                this.bodies.baseball.linear_velocity[0] = -.015;
-                this.bodies.baseball.linear_velocity[1] = -.8 * this.bodies.baseball.linear_velocity[1];
-                this.bodies.baseball.linear_velocity[2] = .001 + this.bodies.baseball.linear_velocity[2];
+                this.bodies.baseball.linear_velocity[0] = event.contact_x_velocity.value;
+                this.bodies.baseball.linear_velocity[1] = event.contact_y_velocity.value * this.bodies.baseball.linear_velocity[1];
+                this.bodies.baseball.linear_velocity[2] = event.contact_z_velocity.value + this.bodies.baseball.linear_velocity[2];
                 this.bodies.baseball.angular_velocity = -this.bodies.baseball.angular_velocity;
-              } else if (b.name === "fence") {
-                console.log("Collided with fence!");
+              } else if (b.name === "fence" || b.name === "fence1") {
+                console.log("Past fence!");
                 this.bodies.baseball.linear_velocity[1] = 0;
                 this.bodies.baseball.linear_velocity[0] = 0;
               }
             }
-          }
-        }
 
-        // Collision detection
-        /*if (t > this.prev_anim_time) {
-          for (let b of this.bodies.manual.concat(this.bodies.auto)) {
-            var b_inv = inverse(mult(b.location_matrix, scale(b.scale)));
-             
-            for (let c of this.bodies.manual.concat(this.bodies.auto)) {
-              if (c.name === "baseball") {
-
-                if (b.shape == this.shapes.box || b.shape == this.shapes.bat)
-                  collider = this.collider;
-                else
-                  collider = b.shape;
-
-                if (b.check_if_colliding(c, b_inv, collider)) {
-                  if (b.name === "grass" || b.name === "infield" || b.name === "mound") {
-                    console.log("Collided with ground!");
-
-                    c.linear_velocity[2] = -.5 * c.linear_velocity[2]; // Ground normal force
-
-                    if (ball_pos[2] <= 5 && c.linear_velocity[2] === 0)
-                      c.linear_acceleration[2] = 0;
-                    else
-                      c.linear_acceleration[2] = this.gravity;
-
-                    // Ground friction
-                    if (c.linear_velocity[1] !== 0)
-                      c.linear_acceleration[1] = -.0005;
-                    if (c.linear_velocity[0] !== 0)
-                      c.linear_acceleration[0] = .0005;
-
-                  } else if (b.name === "bat") {
-                    console.log("Collided with bat!");
-                    c.linear_velocity[0] = -.015;
-                    c.linear_velocity[1] = -.8 * c.linear_velocity[1];
-                    c.linear_velocity[2] = .01 + c.linear_velocity[2];
-                    c.angular_velocity = -c.angular_velocity;
-                  } else if (b.name === "fence") {
-                    console.log("Collided with fence!");
-                    c.linear_velocity[1] = 0;
-                    c.linear_velocity[0] = 0;
-                  }
-                }
-              }
+            else if ((b.name === "fence" || b.name === "fence1") && b.check_if_colliding(this.bodies.baseball, b_inv, collider)) {
+              console.log("Collided with fence!");
+              this.bodies.baseball.linear_velocity[1] = 0;
+              this.bodies.baseball.linear_velocity[0] = 0;
             }
           }
-        }*/
+        }
 
         if (this.ball_camera) {
           ball_pos = mult_vec(this.ball_transform, vec4(0, 0, 0, 1));
           this.graphics_state.camera_transform = lookAt(
-            [ball_pos[0], ball_pos[1] - 20, ball_pos[2]], [ball_pos[0], ball_pos[1], ball_pos[2]], [0, 0, 1]
+            [ball_pos[0], ball_pos[1] - 20, ball_pos[2]],
+            [ball_pos[0], ball_pos[1], ball_pos[2]],
+            [0, 0, 1]
           );
         }
 
@@ -1544,6 +1798,11 @@ Declare_Any_Class("Camera",
             self.mouse.from_center = vec2();
           };
         }) (this), false);
+
+        this.origin = mult_vec(
+            inverse(this.graphics_state.camera_transform),
+            vec4(0,0,0,1)
+          ).slice(0,3);
       },
     'init_keys'(controls) // init_keys(): Define any extra keyboard shortcuts here
       {
@@ -1560,7 +1819,6 @@ Declare_Any_Class("Camera",
         controls.add("s",     this, function() { this.thrust[2] =  0; }, {'type':'keyup'});
         controls.add("d",     this, function() { this.thrust[0] = -1; } );
         controls.add("d",     this, function() { this.thrust[0] =  0; }, {'type':'keyup'});
-
         controls.add("o", this, function() {
           this.origin = mult_vec(
             inverse(this.graphics_state.camera_transform),
@@ -1568,56 +1826,69 @@ Declare_Any_Class("Camera",
           ).slice(0,3);
         });
 
-        controls.add("p", this, function() { // Pitcher's mound
+        controls.add("1", this, function() { // Pitcher's mound
+          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [4.6, 339, 15], [0, 260, 15], [0, 0, 1]
           );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
-        controls.add("h", this, function() { // Home plate
+        controls.add("2", this, function() { // Home plate
+          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [-.6, 81, 15], [0, 90, 15], [0, 0, 1]
           );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
-        controls.add("3", this, function() { // 3rd base
-          this.graphics_state.camera_transform = lookAt(
-            [-193, 372, 15], [-.6, 81, 15], [0, 0, 1]
-          );
-        });
-        controls.add("1", this, function() { // 1st base
+        controls.add("3", this, function() { // 1st base
+          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [190, 379, 15], [-.6, 81, 15], [0, 0, 1]
           );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
-        controls.add("2", this, function() { // 2nd base
+        controls.add("4", this, function() { // 2nd base
+          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [127, 485, 15], [-.6, 81, 15], [0, 0, 1]
           );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
-        /*controls.add("s", this, function() { // Shortstop
+        controls.add("5", this, function() { // 3rd base
+          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+            [-193, 372, 15], [-.6, 81, 15], [0, 0, 1]
           );
-        });*/
-        /*controls.add("l", this, function() { // Left field
-          this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
-          );
-        });*/
-        /*controls.add("c", this, function() { // Center field
-          this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
-          );
-        });*/
-        /*controls.add("r", this, function() { // Right field
-          this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
-          );
-        });*/
-        controls.add("m", this, function() { // TODO: Remove later!
-          this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1]
-          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
+        /*controls.add("6", this, function() { // Shortstop
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });*/
+        controls.add("7", this, function() { // Left field
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [-572, 757, 15], [-572, 800, 15], [0, 0, 1] // TODO
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });
+        controls.add("8", this, function() { // Center field
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [29.75, 1114, 15], [29.75, 1120, 15], [0, 0, 1] // TODO
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });
+        /*controls.add("9", this, function() { // Right field
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+          );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });*/
       },
     'update_strings'(user_interface_string_manager) // Strings that this Scene_Component contributes to the UI:
       {
@@ -1666,8 +1937,8 @@ Declare_Any_Class("Flag_Toggler",
       },
     'init_keys'(controls) //  Desired keyboard shortcuts
       {
-        controls.add( "ALT+g", this, function() { this.globals.graphics_state.gouraud       ^= 1; } ); // Make the keyboard toggle some
-        controls.add( "ALT+n", this, function() { this.globals.graphics_state.color_normals ^= 1; } ); // GPU flags on and off.
+        //controls.add( "ALT+g", this, function() { this.globals.graphics_state.gouraud       ^= 1; } ); // Make the keyboard toggle some
+        //controls.add( "ALT+n", this, function() { this.globals.graphics_state.color_normals ^= 1; } ); // GPU flags on and off.
         controls.add( "ALT+a", this, function() { this.globals.animate                      ^= 1; } );
       },
     'update_strings'(user_interface_string_manager) // Strings that this Scene_Component contributes to the UI:

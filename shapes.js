@@ -101,10 +101,10 @@ Declare_Any_Class("Tetrahedron",
           this.normals.push( vec3(-1,0,0), vec3(-1,0,0), vec3(-1,0,0) );
           this.normals.push( vec3( a,a,a), vec3( a,a,a), vec3( a,a,a) );
 
-          this.texture_coords.push( vec3(0,0,0), vec3(1,0,0), vec3(0,1,0) );  // Each face in Method 2 also gets its own set of texture coords
-          this.texture_coords.push( vec3(0,0,0), vec3(1,0,0), vec3(0,1,0) );  //(half the image is mapped onto each face).  We couldn't do this
-          this.texture_coords.push( vec3(0,0,0), vec3(1,0,0), vec3(0,1,0) );  // with shared vertices -- after all, it involves different results
-          this.texture_coords.push( vec3(0,0,0), vec3(1,0,0), vec3(0,1,0) );  // when approaching the same point from different directions.
+          this.texture_coords.push( vec2(0,0), vec2(1,0), vec2(1,0) );  // Each face in Method 2 also gets its own set of texture coords
+          this.texture_coords.push( vec2(0,0), vec2(1,0), vec2(1,0) );  //(half the image is mapped onto each face).  We couldn't do this
+          this.texture_coords.push( vec2(0,0), vec2(1,0), vec2(1,0) );  // with shared vertices -- after all, it involves different results
+          this.texture_coords.push( vec2(0,0), vec2(1,0), vec2(1,0) );  // when approaching the same point from different directions.
 
           this.indices.push( 0, 1, 2,    3, 4, 5,    6, 7, 8,    9, 10, 11 ); // Notice all vertices are unique this time.
         }

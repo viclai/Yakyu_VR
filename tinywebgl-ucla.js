@@ -74,6 +74,7 @@ Declare_Any_Class("Shape",
           gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.index_buffer);
           gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(this.indices), gl.STATIC_DRAW);
         }
+        this.sent_to_GPU = true;
         this.gl = gl;
       },      
     'draw'(graphics_state, model_transform, material, gl = this.gl)
@@ -101,6 +102,21 @@ Declare_Any_Class("Shape",
         }
         else
           gl.drawArrays(gl.TRIANGLES, 0, this.positions.length); // If no indices were provided, assume the vertices are arranged in triples
+      },
+    'normalize_positions_relative_to_max_length'()
+      { var average_position = vec3();
+        var max_length = 0;
+        var len;
+        for( let [i, p] of this.positions.entries() ) average_position  =  add( average_position, scale_vec( 1/this.positions.length, p ) );
+        for( let [i, p] of this.positions.entries() ) this.positions[i] =  subtract( p, average_position );
+        for( let [i, p] of this.positions.entries() ) {
+          len = length(p);
+          if (len > max_length)
+            max_length = len;
+        }
+        for( let [i, p] of this.positions.entries() ) {
+          this.positions[i] =  scale_vec( 1/max_length, p );//scale_vec( 1/average_length, p );
+        }
       },
     'normalize_positions'()
       {
