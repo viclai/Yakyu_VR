@@ -147,29 +147,29 @@ Declare_Any_Class("Body",
         //console.log("Inside checking collision");
         var i;
         var p1 = mult_vec(this.prev_location_matrix, vec4(0, 0, 0, 1)).slice(0, 3);
-        if (b.name == "fence1") {
-          console.log("p1: ");
-          console.log(p1);
-        }
+        //if (b.name == "fence1") {
+          //console.log("p1: ");
+          //console.log(p1);
+        //}
         var p2 = mult_vec(this.location_matrix, vec4(0, 0, 0, 1)).slice(0, 3);
-        if (b.name == "fence1") {
-          console.log("p2: ");
-          console.log(p2);
-        }
+        //if (b.name == "fence1") {
+          //console.log("p2: ");
+          //console.log(p2);
+        //}
         var pVec = subtract(p1, p2);
         //console.log("pVec: ");
         //console.log(pVec);
         var bCenter = mult_vec(b.location_matrix, vec4(0, 0, 0, 1)).slice(0, 3);
-        if (b.name == "fence1") {
-          console.log("bCenter: ");
-          console.log(bCenter);
-        }
+        //if (b.name == "fence1") {
+          //console.log("bCenter: ");
+          //console.log(bCenter);
+        //}
         var d = -((pVec[0] * -bCenter[0]) + (pVec[1] * - bCenter[1]) + (pVec[2] * -bCenter[2])); // Last component of plane
         var intersection = intersect(p1, p2, pVec.concat(d));
-        if (b.name == "fence1") {
-          console.log("Intersection: ");
-          console.log(intersection);
-        }
+        //if (b.name == "fence1") {
+          //console.log("Intersection: ");
+          //console.log(intersection);
+        //}
         var new_loc = translation(intersection);
         var new_a_inv = inverse(mult(new_loc, scale(this.scale)));
         var insideObj = false;
@@ -214,10 +214,10 @@ Declare_Any_Class("Body",
         if (betweenPoints && insideObj) {
           //console.log(this.collision_history);
           if (this.collision_history[1].name == b.name && this.collision_history[1].collided == true) {
-            console.log("Prevented double collision");
+            //console.log("Prevented double collision");
             return false;
           }
-          console.log("reverted");
+          //console.log("reverted");
           this.location_matrix = this.prev_location_matrix;
           this.linear_velocity = this.prev_linear_velocity;
           this.angular_velocity = this.prev_angular_velocity;
@@ -279,6 +279,8 @@ Declare_Any_Class("Baseball_Scene",
           var pole_scale = vec3(5, 5, 300);
           var outfield_gate;
           var outfield_gate_scale = vec3(100, 5, 100);
+          var base;
+          var bat_box;
 
           // Draw grass
           /*for (i = 0; i < tile_dimensions.length * tilesX; i += tile_dimensions.length) {
@@ -308,8 +310,17 @@ Declare_Any_Class("Baseball_Scene",
               }
             }
           }*/
-          oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.large_grass, ground_center, vec3(1500, 1500, 4)));
+
+          base = mult(translation(0, 515, 4.5), rotation(45, [0, 0, 1]));
+          oScene.bodies.auto.push(new Body("base", oScene.shapes.box, oScene.base, base, vec3(6, 6, 1))); // Second base
+
+          oScene.bodies.auto.push(new Body("base", oScene.shapes.base, oScene.base, translation(0, 120, 4.5), vec3(8, 8, 1))); // Home plate
+          oScene.bodies.auto.push(new Body("grass", oScene.shapes.box, oScene.large_grass, ground_center, vec3(2800, 2800, 4)));
           //oScene.bodies.ball_collision_items.push(new Body("grass", oScene.shapes.box, oScene.large_grass, ground_center, vec3(1500, 1500, 4)));
+
+          // Draw batter's boxes
+          oScene.bodies.auto.push(new Body("base", oScene.shapes.dbox, oScene.chalk, translation(-10, 120, 4.1), vec3(6, 15, 1)));
+          oScene.bodies.auto.push(new Body("base", oScene.shapes.dbox, oScene.chalk, translation(10, 120, 4.1), vec3(6, 15, 1)));
 
           // Draw pitcher's mound
           oScene.bodies.auto.push(new Body("mound", oScene.shapes.ball, oScene.infield_dirt, partial_sphere, mound));
@@ -319,13 +330,16 @@ Declare_Any_Class("Baseball_Scene",
           oScene.bodies.auto.push(new Body("infield", oScene.shapes.diamond, oScene.infield_dirt, infield, diamond));
           //oScene.bodies.ball_collision_items.push(new Body("infield", oScene.shapes.diamond, oScene.infield_dirt, infield, diamond));
 
-          // Draw baseline, foul poles, and outfield fences
-          chalk = mult(surface, translation(-17, 160, .1));
+          // Draw baseline, bases, foul poles, and outfield fences
+          chalk = mult(surface, translation(-17, 170, .1));
           chalk = mult(chalk, rotation(-45, [0, 0, 1]));
           pole = chalk;
+          base = chalk;
           chalk = mult(chalk, translation(-500, 0, 0));
           oScene.bodies.auto.push(new Body("foul_line", oScene.shapes.box, oScene.chalk, chalk, chalk_scale));
+          base = mult(base, translation(-240, 10, .5));
           pole = mult(pole, translation(-1000, 0, 0));
+          oScene.bodies.auto.push(new Body("base", oScene.shapes.box, oScene.base, base, vec3(6, 6, 1))); // Third base
           oScene.bodies.auto.push(new Body("foul_pole", oScene.shapes.cylinder, oScene.yellow_paint, pole, pole_scale));
           outfield_gate = mult(pole, translation(0, 125, -70));
           outfield_gate = mult(outfield_gate, rotation(90, [0, 0, 1]));
@@ -348,12 +362,15 @@ Declare_Any_Class("Baseball_Scene",
           oScene.bodies.auto.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
           oScene.bodies.ball_collision_items.push(new Body("fence", oScene.shapes.fence, oScene.chain, outfield_gate, outfield_gate_scale));
 
-          chalk = mult(surface, translation(17, 160, .1));
+          chalk = mult(surface, translation(17, 170, .1));
           chalk = mult(chalk, rotation(45, [0, 0, 1]));
           pole = chalk;
+          base = chalk;
           chalk = mult(chalk, translation(500, 0, 0));
           oScene.bodies.auto.push(new Body("foul_line", oScene.shapes.box, oScene.chalk, chalk, chalk_scale));
+          base = mult(base, translation(240, 10, .5));
           pole = mult(pole, translation(1000, 0, 0));
+          oScene.bodies.auto.push(new Body("base", oScene.shapes.box, oScene.base, base, vec3(6, 6, 1))); // First base
           oScene.bodies.auto.push(new Body("foul_pole", oScene.shapes.cylinder, oScene.yellow_paint, pole, pole_scale));
           outfield_gate = mult(pole, translation(0, 125, -70));
           outfield_gate = mult(outfield_gate, rotation(-90, [0, 0, 1]));
@@ -435,16 +452,19 @@ Declare_Any_Class("Baseball_Scene",
               0,
               offset + oHeadDimensions.height / 2)
             );
+            var eyes = mult(center, rotation(175, [0, 0, 1]));
+            eyes = mult(eyes, rotation(-20, [0, 1, 0]));
+            eyes = mult(eyes, rotation(-50, [1, 0, 0]));
             face = vec3(
-              oHeadDimensions.length / 2,
+              -oHeadDimensions.length / 2,
               oHeadDimensions.width / 2,
               oHeadDimensions.height / 2
             );
             oScene.bodies.auto.push(new Body(
               "head",
               oScene.shapes.sphere,
-              oScene.skin,
-              center,
+              oScene.face,
+              eyes,
               face
             ));
             return center;
@@ -497,8 +517,8 @@ Declare_Any_Class("Baseball_Scene",
            */
           var draw_shoes = function(oScene, mSurface) {
             var shoe_dimensions = {
-              "length" : 2 * 4, // x
-              "width"  : 2 * 2, // y
+              "length" : 2 * 2, // x
+              "width"  : 2 * 4, // y
               "height" : 2      // z
             };
             var sizeShoe = vec3(
@@ -509,7 +529,7 @@ Declare_Any_Class("Baseball_Scene",
             var pos = mult(mSurface, translation(-10, 120, 1));
             var flipShoe = rotation(180, [1, 0, 0]);
 
-            flipShoe = mult(flipShoe, rotation(180, [0, 0, 1]));
+            flipShoe = mult(flipShoe, rotation(90, [0, 0, 1]));
 
             // First shoe
             pos = mult(pos, flipShoe);
@@ -586,16 +606,18 @@ Declare_Any_Class("Baseball_Scene",
               0,
               offset + oHeadDimensions.height / 2)
             );
+            var eyes = mult(center, rotation(-40, [1, 0, 0]));
+            eyes = mult(eyes, rotation(-30, [0, 1, 0]));
             face = vec3(
-              oHeadDimensions.length / 2,
+              -oHeadDimensions.length / 2,
               oHeadDimensions.width / 2,
               oHeadDimensions.height / 2
             );
             oScene.bodies.auto.push(new Body(
               "head",
               oScene.shapes.sphere,
-              oScene.skin,
-              center,
+              oScene.face,
+              eyes,
               face
             ));
             return center;
@@ -667,19 +689,19 @@ Declare_Any_Class("Baseball_Scene",
            */
           var draw_shoes = function(oScene, mSurface) {
             var shoe_dimensions = {
-              "length" : 2 * 4, // x
-              "width"  : 2 * 2, // y
+              "length" : 2 * 2, // x
+              "width"  : 2 * 4, // y
               "height" : 2      // z
             };
             var sizeShoe = vec3(
               shoe_dimensions.length / 2,
-              shoe_dimensions.width / 2,
+              -shoe_dimensions.width / 2,
               shoe_dimensions.height
             );
             var pos = mult(mSurface, translation(1.5, 290, 5.5));
             var flipShoe = rotation(180, [1, 0, 0]);
 
-            flipShoe = mult(flipShoe, rotation(180, [0, 0, 1]));
+            flipShoe = mult(flipShoe, rotation(90, [0, 0, 1]));
 
             // First shoe
             pos = mult(pos, flipShoe);
@@ -733,6 +755,7 @@ Declare_Any_Class("Baseball_Scene",
 
         var shapes = {
           "box"         : new Cube(), 
+          "dbox"        : new Donut_Box(),
           "ball"        : new Shape_From_File("resources/baseball.obj"),
           "base"        : new Base(),
           "sphere"      : new Subdivision_Sphere(5),
@@ -784,9 +807,15 @@ Declare_Any_Class("Baseball_Scene",
               Color(0, 0, 0, 1), 1, 1, 0, 40, 
               context.textures_in_use["helmet_paint.jpg"]
             ),
+          face :
+            context.shaders_in_use["Phong_Model"].material(
+              Color(0, 0, 0, 1), 1, 1, 0, 40, 
+              context.textures_in_use["face.jpg"]
+            ),
           rubber       :
             context.shaders_in_use["Phong_Model"].material(
-              Color(1, 1, 0, 1), .5, 1, .7, 40
+              Color(0, 0, 0, 1), 1, 1, 0, 40,
+              context.textures_in_use["shoe_color.jpg"]
             ),
           cloth        :
             context.shaders_in_use["Phong_Model"].material(
@@ -794,7 +823,7 @@ Declare_Any_Class("Baseball_Scene",
             ),
           skin         :
             context.shaders_in_use["Phong_Model"].material(
-              Color(204/255, 153/255, 0, 1), .5, 1, .7, 40
+              Color(255/255, 213/255, 105/255, 1), .9, 1, .7, 40
             ),
           wool         :
             context.shaders_in_use["Phong_Model"].material(
@@ -842,24 +871,104 @@ Declare_Any_Class("Baseball_Scene",
               "release_y_velocity" : { "value" : -.06, "isFactor" : false },
               "gravity"            : { "value" : 0.00001 * -9.8, "isFactor" : false },
               "friction_x_acceleration" : { "value" : .0005, "isFactor": false },
-              "friction_y_acceleration" : { "value" : -.0005, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
               "normal_z_acceleration" : { "value" : -.5, "isFactor": true } // Multiply
             },
             {
-              "contact_x_velocity" : { "value" : .05, "isFactor" : false},
+              "contact_x_velocity" : { "value" : .03, "isFactor" : false},
               "contact_y_velocity" : { "value" : -.8, "isFactor" : true}, // Multiply
               "contact_z_velocity" : { "value" : .01, "isFactor" : true}, // Add
               "release_y_velocity" : { "value" : -.09, "isFactor" : false},
               "gravity"            : { "value" : 0.00001 * -9.8, "isFactor" : false },
-              "friction_x_acceleration" : { "value" : -.0005, "isFactor": false },
-              "friction_y_acceleration" : { "value" : -.0005, "isFactor": false },
+              "friction_x_acceleration" : { "value" : .0005, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
               "normal_z_acceleration" : { "value" : -.5, "isFactor": true } // Multiply
-            }
+            },
+            {
+              "contact_x_velocity" : { "value" : 0, "isFactor" : false},
+              "contact_y_velocity" : { "value" : -.9, "isFactor" : true}, // Multiply
+              "contact_z_velocity" : { "value" : .03, "isFactor" : true}, // Add
+              "release_y_velocity" : { "value" : -.09, "isFactor" : false},
+              "gravity"            : { "value" : 0.000009 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : 0, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.4, "isFactor": true } // Multiply
+            },
+            {
+              "contact_x_velocity" : { "value" : 0, "isFactor" : false},
+              "contact_y_velocity" : { "value" : -.9, "isFactor" : true}, // Multiply
+              "contact_z_velocity" : { "value" : .04, "isFactor" : true}, // Add
+              "release_y_velocity" : { "value" : -.09, "isFactor" : false},
+              "gravity"            : { "value" : 0.000009 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : 0, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.4, "isFactor": true } // Multiply
+            },
+            {
+              "contact_x_velocity" : { "value" : .03, "isFactor" : false},
+              "contact_y_velocity" : { "value" : -.9, "isFactor" : true}, // Multiply
+              "contact_z_velocity" : { "value" : .03, "isFactor" : true}, // Add
+              "release_y_velocity" : { "value" : -.09, "isFactor" : false},
+              "gravity"            : { "value" : 0.000009 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : .0005, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.4, "isFactor": true } // Multiply
+            },
+            {
+              "contact_x_velocity" : { "value" : -.03, "isFactor" : false},
+              "contact_y_velocity" : { "value" : -.9, "isFactor" : true}, // Multiply
+              "contact_z_velocity" : { "value" : .03, "isFactor" : true}, // Add
+              "release_y_velocity" : { "value" : -.09, "isFactor" : false},
+              "gravity"            : { "value" : 0.000009 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : .0005, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.4, "isFactor": true } // Multiply
+            },
+            {
+              "contact_x_velocity" : { "value" : 0, "isFactor" : false},
+              "contact_y_velocity" : { "value" : .8, "isFactor" : true}, // Multiply
+              "contact_z_velocity" : { "value" : .02, "isFactor" : true}, // Add
+              "release_y_velocity" : { "value" : -.11, "isFactor" : false},
+              "gravity"            : { "value" : 0.00001 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : .0005, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.5, "isFactor": true } // Multiply
+            },
+            {
+              "contact_x_velocity" : { "value" : .008, "isFactor" : false},
+              "contact_y_velocity" : { "value" : .1, "isFactor" : true}, // Multiply
+              "contact_z_velocity" : { "value" : .05, "isFactor" : true}, // Add
+              "release_y_velocity" : { "value" : -.11, "isFactor" : false},
+              "gravity"            : { "value" : 0.00001 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : .0005, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.3, "isFactor": true } // Multiply
+            },
+            {
+              "contact_x_velocity" : { "value" : .02, "isFactor" : false},
+              "contact_y_velocity" : { "value" : -.9, "isFactor" : true}, // Multiply
+              "contact_z_velocity" : { "value" : .04, "isFactor" : true}, // Add
+              "release_y_velocity" : { "value" : -.09, "isFactor" : false},
+              "gravity"            : { "value" : 0.000009 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : 0, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.4, "isFactor": true } // Multiply
+            },
+            {
+              "contact_x_velocity" : { "value" : -.04, "isFactor" : false},
+              "contact_y_velocity" : { "value" : -1.9, "isFactor" : true}, // Multiply
+              "contact_z_velocity" : { "value" : .001, "isFactor" : true}, // Add
+              "release_y_velocity" : { "value" : -.09, "isFactor" : false},
+              "gravity"            : { "value" : 0.000009 * -9.8, "isFactor" : false },
+              "friction_x_acceleration" : { "value" : .1, "isFactor": false },
+              "friction_y_acceleration" : { "value" : .0005, "isFactor": false },
+              "normal_z_acceleration" : { "value" : -.4, "isFactor": true } // Multiply
+            },
           ]
         });
 
         context.globals.graphics_state.set(
-          lookAt([4.6, 339, 15], [0, 260, 15], [0, 0, 1]),
+          lookAt([1.58, 287, 15], [0, 260, 15], [0, 0, 1]),
           perspective(45, context.width/context.height, .1, 1000),
           0
         );
@@ -900,9 +1009,9 @@ Declare_Any_Class("Baseball_Scene",
         }) (this), false);
 
         this.origin = mult_vec(
-            inverse(this.graphics_state.camera_transform),
-            vec4(0,0,0,1)
-          ).slice(0,3);
+          inverse(this.graphics_state.camera_transform),
+          vec4(0,0,0,1)
+        ).slice(0,3);
 
         this.surface = draw_field(this);
         draw_batter(this, this.surface);
@@ -926,17 +1035,25 @@ Declare_Any_Class("Baseball_Scene",
       {
         controls.add("b", this, function() { // Follow ball
           this.ball_camera = true;
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
 
-        controls.add("m", this, function() { // TODO: Remove later!
+        /*controls.add("m", this, function() { // TODO: Remove later!
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [.7, 223, 15], [0, 300, 15], [0, 0, 1]
           );
         });
+        controls.add("r", this, function() { // 3rd base
+          this.ball_camera = false;
+          this.graphics_state.camera_transform = lookAt(
+            [0, 0, 15], [0, 10, 15], [0, 0, 1]
+          );
+          //this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
+        });*/
 
         // TODO: Remove these later!
-        controls.add("Space", this, function() { this.thrust[1] = -1; });
+        /*controls.add("Space", this, function() { this.thrust[1] = -1; });
         controls.add("Space", this, function() { this.thrust[1] =  0; }, {'type':'keyup'});
         controls.add("z",     this, function() { this.thrust[1] =  1; });
         controls.add("z",     this, function() { this.thrust[1] =  0; }, {'type':'keyup'});
@@ -953,12 +1070,12 @@ Declare_Any_Class("Baseball_Scene",
             inverse(this.graphics_state.camera_transform),
             vec4(0,0,0,1)
           ).slice(0,3);
-        });
+        });*/
 
         controls.add("1", this, function() { // Pitcher's mound
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [4.6, 339, 15], [0, 260, 15], [0, 0, 1]
+            [1.58, 287, 15], [0, 260, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
@@ -990,46 +1107,35 @@ Declare_Any_Class("Baseball_Scene",
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
-        /*controls.add("6", this, function() { // Shortstop
+        controls.add("6", this, function() { // Shortstop
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+            [-87, 538, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
-        });*/
+        });
         controls.add("7", this, function() { // Left field
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [-572, 757, 15], [-572, 800, 15], [0, 0, 1] // TODO
+            [-506, 735, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
         controls.add("8", this, function() { // Center field
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [29.75, 1114, 15], [29.75, 1120, 15], [0, 0, 1] // TODO
+            [39, 960, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
-        /*controls.add("9", this, function() { // Right field
+        controls.add("9", this, function() { // Right field
           this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+            [372, 695, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
-        });*/
+        });
       },
-    /*'update_strings'(user_interface_string_manager) // Strings that this Scene_Component contributes to the UI:
-      {
-        var C_inv = inverse(this.graphics_state.camera_transform), pos = mult_vec(C_inv, vec4( 0, 0, 0, 1 )),
-                                                                  z_axis = mult_vec(C_inv, vec4( 0, 0, 1, 0 ));
-        user_interface_string_manager.string_map["origin" ] = "Center of rotation: " 
-                                                              + this.origin[0].toFixed(0) + ", " + this.origin[1].toFixed(0) + ", " + this.origin[2].toFixed(0);
-        user_interface_string_manager.string_map["cam_pos"] = "Cam Position: "
-                                                              + pos[0].toFixed(2) + ", " + pos[1].toFixed(2) + ", " + pos[2].toFixed(2);    
-        user_interface_string_manager.string_map["facing" ] = "Facing: " + ( ( z_axis[0] > 0 ? "West " : "East ") // (Actually affected by the left hand rule)
-                                                               + ( z_axis[1] > 0 ? "Down " : "Up " ) + ( z_axis[2] > 0 ? "North" : "South" ) );
-      },*/
     'display'(graphics_state)
       {
         /*
@@ -1506,7 +1612,7 @@ Declare_Any_Class("Baseball_Scene",
               rotAngle = 90;
             gloveMotion = mult(bodyTop, rotation(rotAngle, [0, 0, 1]));
 
-            leftHinge = mult(gloveMotion, translation(-.2 * bodyScale, -bodyScale * .25, 0));
+            leftHinge = mult(gloveMotion, translation(-.08 * bodyScale, -bodyScale * .1, 0));
             rightHinge = mult(throwMotion, translation((-bodyScale * .25) /*- (.2 * bodyScale)*/, 0, 0));
 
             // Draw mitt (glove)
@@ -1583,8 +1689,9 @@ Declare_Any_Class("Baseball_Scene",
         };
 
         var pick_event = function(oScene) {
-          // TODO
-          return oScene.events[1];
+          var n = oScene.events.length;
+          var i = Math.floor(Math.random() * n);
+          return oScene.events[i]; // TODO: Insert i
         }
 
         var model_transform = identity();
@@ -1632,10 +1739,19 @@ Declare_Any_Class("Baseball_Scene",
             this.bodies.baseball.linear_velocity[2] = event.normal_z_acceleration.value * this.bodies.baseball.linear_velocity[2];
 
             // Ground friction
-            if (this.bodies.baseball.linear_velocity[1] !== 0)
-              this.bodies.baseball.linear_acceleration[1] = event.friction_y_acceleration.value;
-            if (this.bodies.baseball.linear_velocity[0] !== 0)
-              this.bodies.baseball.linear_acceleration[0] = event.friction_x_acceleration.value;
+            if (this.bodies.baseball.linear_velocity[1] !== 0) {
+              if (this.bodies.baseball.linear_velocity[1] > 0)
+                this.bodies.baseball.linear_acceleration[1] = -event.friction_y_acceleration.value;
+              else
+                this.bodies.baseball.linear_acceleration[1] = event.friction_y_acceleration.value;
+              this.bodies.baseball.angular_velocity = .6 * this.bodies.baseball.angular_velocity;
+            }
+            if (this.bodies.baseball.linear_velocity[0] !== 0) {
+              if (this.bodies.baseball.linear_velocity[0] > 0)
+                this.bodies.baseball.linear_acceleration[0] = -event.friction_x_acceleration.value;
+              else
+                this.bodies.baseball.linear_acceleration[0] = event.friction_x_acceleration.value;
+            }
           }
           else if (this.bodies.baseball.location_matrix[2][3] < 5.6 &&
                    this.bodies.baseball.linear_velocity[2] == 0 &&
@@ -1644,7 +1760,7 @@ Declare_Any_Class("Baseball_Scene",
             this.bodies.baseball.linear_acceleration[2] = 0;
             this.bodies.baseball.angular_velocity = 0;
 
-            // Reset ball
+            // Reset and spawn new ball
             this.ball_free = false;
             this.bodies.auto.push(this.bodies.baseball);
             this.ball_start_time = t;
@@ -1656,29 +1772,39 @@ Declare_Any_Class("Baseball_Scene",
             a_inv = inverse(mult(this.bodies.baseball.location_matrix, scale(this.bodies.baseball.scale)));
             b_inv = inverse(mult(b.location_matrix, scale(b.scale)));
 
-            //if (b.name === "fence1")
-              //collider = b.shape;
-            //else
-              collider = this.collider;
+            collider = this.collider;
 
             if (this.bodies.baseball.collided(b, a_inv, collider)) {
               if (b.name === "bat") {
-                console.log("Collided with bat!");
+                //console.log("Collided with bat!");
                 this.bodies.baseball.linear_velocity[0] = event.contact_x_velocity.value;
                 this.bodies.baseball.linear_velocity[1] = event.contact_y_velocity.value * this.bodies.baseball.linear_velocity[1];
                 this.bodies.baseball.linear_velocity[2] = event.contact_z_velocity.value + this.bodies.baseball.linear_velocity[2];
                 this.bodies.baseball.angular_velocity = -this.bodies.baseball.angular_velocity;
               } else if (b.name === "fence" || b.name === "fence1") {
-                console.log("Past fence!");
+                //console.log("Past fence!");
+                if (this.bodies.baseball.linear_velocity[2] > 0)
+                  this.bodies.baseball.linear_velocity[2] = -1 * this.bodies.baseball.linear_velocity[2];
+                else
+                  this.bodies.baseball.linear_velocity[2] = 1 * this.bodies.baseball.linear_velocity[2];
                 this.bodies.baseball.linear_velocity[1] = 0;
                 this.bodies.baseball.linear_velocity[0] = 0;
+                this.bodies.baseball.angular_velocity = .3 * this.bodies.baseball.angular_velocity;
+                //this.bodies.baseball.linear_acceleration[1] = .;
               }
             }
 
             else if ((b.name === "fence" || b.name === "fence1") && b.check_if_colliding(this.bodies.baseball, b_inv, collider)) {
-              console.log("Collided with fence!");
+              //console.log("Collided with fence!");
+              if (this.bodies.baseball.linear_velocity[1] !== 0) {
+                if (this.bodies.baseball.linear_velocity[2] > 0)
+                  this.bodies.baseball.linear_velocity[2] = -1 * this.bodies.baseball.linear_velocity[2];
+                else
+                  this.bodies.baseball.linear_velocity[2] = 1 * this.bodies.baseball.linear_velocity[2];
+              }
               this.bodies.baseball.linear_velocity[1] = 0;
               this.bodies.baseball.linear_velocity[0] = 0;
+              this.bodies.baseball.angular_velocity = .5 * this.bodies.baseball.angular_velocity;
             }
           }
         }
@@ -1690,6 +1816,7 @@ Declare_Any_Class("Baseball_Scene",
             [ball_pos[0], ball_pos[1], ball_pos[2]],
             [0, 0, 1]
           );
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         }
 
         this.prev_anim_time = t;
@@ -1759,7 +1886,7 @@ Declare_Any_Class("Camera",
     'construct'(context, canvas = context.canvas)
       { // 1st parameter below is our starting camera matrix. 2nd is the projection: The matrix that determines how depth is treated. It projects 3D points onto a plane.
         context.globals.graphics_state.set(
-          lookAt([4.6, 339, 15], [0, 260, 15], [0, 0, 1]),
+          lookAt([1.58, 287, 15], [0, 260, 15], [0, 0, 1]),
           perspective(45, context.width/context.height, .1, 1000),
           0
         );
@@ -1807,7 +1934,7 @@ Declare_Any_Class("Camera",
     'init_keys'(controls) // init_keys(): Define any extra keyboard shortcuts here
       {
         // TODO: Remove these later!
-        controls.add("Space", this, function() { this.thrust[1] = -1; });
+        /*controls.add("Space", this, function() { this.thrust[1] = -1; });
         controls.add("Space", this, function() { this.thrust[1] =  0; }, {'type':'keyup'});
         controls.add("z",     this, function() { this.thrust[1] =  1; });
         controls.add("z",     this, function() { this.thrust[1] =  0; }, {'type':'keyup'});
@@ -1824,71 +1951,66 @@ Declare_Any_Class("Camera",
             inverse(this.graphics_state.camera_transform),
             vec4(0,0,0,1)
           ).slice(0,3);
+        });*/
+
+        controls.add("b", this, function() { // Follow ball
+          this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
 
         controls.add("1", this, function() { // Pitcher's mound
-          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [4.6, 339, 15], [0, 260, 15], [0, 0, 1]
+            [1.58, 287, 15], [0, 260, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
         controls.add("2", this, function() { // Home plate
-          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [-.6, 81, 15], [0, 90, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
         controls.add("3", this, function() { // 1st base
-          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [190, 379, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
         controls.add("4", this, function() { // 2nd base
-          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [127, 485, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
         controls.add("5", this, function() { // 3rd base
-          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
             [-193, 372, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
-        /*controls.add("6", this, function() { // Shortstop
-          this.ball_camera = false;
+        controls.add("6", this, function() { // Shortstop
           this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+            [-87, 538, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
-        });*/
+        });
         controls.add("7", this, function() { // Left field
-          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [-572, 757, 15], [-572, 800, 15], [0, 0, 1] // TODO
+            [-506, 735, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
         controls.add("8", this, function() { // Center field
-          this.ball_camera = false;
           this.graphics_state.camera_transform = lookAt(
-            [29.75, 1114, 15], [29.75, 1120, 15], [0, 0, 1] // TODO
+            [39, 960, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
         });
-        /*controls.add("9", this, function() { // Right field
-          this.ball_camera = false;
+        controls.add("9", this, function() { // Right field
           this.graphics_state.camera_transform = lookAt(
-            [.7, 223, 15], [0, 300, 15], [0, 0, 1] // TODO
+            [372, 695, 15], [-.6, 81, 15], [0, 0, 1]
           );
           this.origin = mult_vec(inverse(this.graphics_state.camera_transform), vec4(0,0,0,1)).slice(0,3);
-        });*/
+        });
       },
     'update_strings'(user_interface_string_manager) // Strings that this Scene_Component contributes to the UI:
       {

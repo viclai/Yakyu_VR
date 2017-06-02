@@ -38,6 +38,12 @@
  *      Text_Line
  * 5. My Shapes:
  *      Base
+ *      Body_Tube
+ *      Half_Sphere
+ *      Square_Hole
+ *      Quarter_Circle_Diamond
+ *      Fence
+ *      Donut_Box
  ****************************************************************************/
 
 
@@ -444,10 +450,17 @@ Declare_Any_Class("Base",
   {
     'populate'()
       {
-        this.positions     .push(vec3(-.25,-.5, 0), vec3(.25,-.5, 0), vec3(-.25,0,0), vec3(.25,0,0), vec3(0,.25, 0));
+        this.positions     .push(vec3(-.25, .5, 1), vec3(.25, .5, 1), vec3(-.25, 0, 1), vec3(.25, 0, 1), vec3(0, -.25, 1));
         this.normals       .push(vec3(0,0,1), vec3(0,0,1), vec3(0,0,1), vec3(0,0,1), vec3(0,0,1));
         this.texture_coords.push(vec2(0,0),   vec2(1,0),   vec2(0,1),   vec2(1,1)   );
         this.indices       .push(0, 1, 2, 1, 3, 2, 4, 2, 3);
+
+        this.positions     .push(vec3(-.25, .5, -1), vec3(.25, .5, -1), vec3(-.25, 0, -1), vec3(.25, 0, -1), vec3(0, -.25, -1));
+        this.normals       .push(vec3(0,0,1), vec3(0,0,1), vec3(0,0,1), vec3(0,0,1), vec3(0,0,1));
+        this.texture_coords.push(vec2(0,0),   vec2(1,0),   vec2(0,1),   vec2(1,1)   );
+        this.indices       .push(5, 6, 7, 6, 8, 7, 9, 6, 7);
+
+        this.indices       .push(0, 2, 5, 7, 5, 2, 4, 2, 7, 9, 7, 4, 8, 9, 4, 3, 8, 4, 1, 3, 8, 6, 8, 1, 0, 1, 5, 6, 5, 1);
       }
   }, Shape)
 
@@ -1495,5 +1508,47 @@ Declare_Any_Class("Fence",
         }
 
         this.normalize_positions();
+      }
+  }, Shape)
+
+Declare_Any_Class("Donut_Box",
+  {
+    'populate'()
+      {
+        this.positions     .push(vec3(-1,-1,1), vec3(-1,1,1), vec3(1,1,1), vec3(1,-1,1),
+                                 vec3(-.9,-.9,1), vec3(-.9,.9,1), vec3(.9,.9,1), vec3(.9,-.9,1));
+        this.normals       .push(vec3(0,0,1), vec3(0,0,1), vec3(0,0,1), vec3(0,0,1),
+                                 vec3(0,0,1), vec3(0,0,1), vec3(0,0,1), vec3(0,0,1));
+        this.texture_coords.push(vec2(1,1),   vec2(1,1),   vec2(0,1),   vec2(1,1),
+                                 vec2(1,1), vec2(1,1), vec2(1,1), vec2(1,1)   );
+        this.indices       .push(0, 4, 3,     3, 0, 7,
+                                 0, 4, 1,     1, 5, 0,
+                                 3, 7, 2,     2, 6, 3,
+                                 1, 2, 5,     1, 2, 6,
+                                 2, 5, 6,     1, 6, 5,
+                                 2, 6, 7,     3, 6, 7,
+                                 3, 4, 7,     0, 7, 4,
+                                 1, 5, 4,     0, 4, 5);
+
+        this.positions     .push(vec3(-1,-1,-1), vec3(-1,1,-1), vec3(1,1,-1), vec3(1,-1,-1),
+                                 vec3(-.9,-.9,-1), vec3(-.9,.9,-1), vec3(.9,.9,-1), vec3(.9,-.9,-1));
+        this.normals       .push(vec3(0,0,-1), vec3(0,0,-1), vec3(0,0,-1), vec3(0,0,-1),
+                                 vec3(0,0,-1), vec3(0,0,-1), vec3(0,0,-1), vec3(0,0,-1));
+        this.texture_coords.push(vec2(1,1),   vec2(1,1),   vec2(0,1),   vec2(1,1),
+                                 vec2(1,1), vec2(1,1), vec2(1,1), vec2(1,1)   );
+        this.indices       .push(8, 12, 11,     11, 8, 15,
+                                 8, 12, 9,     9, 13, 8,
+                                 11, 15, 10,     10, 14, 11,
+                                 9, 10, 13,     9, 10, 14,
+                                 10, 13, 14,     9, 14, 13,
+                                 10, 14, 15,     11, 14, 15,
+                                 11, 12, 15,     8, 15, 12,
+                                 9, 13, 12,     8, 12, 13);
+
+        this.indices       .push(1, 8, 0,     8, 9, 1,
+                                 0, 11, 3,     0, 8, 11,
+                                 2, 11, 3,     2, 11, 10,
+                                 1, 10, 2,     1, 10, 9,
+                                 );
       }
   }, Shape)
