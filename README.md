@@ -1,6 +1,8 @@
-# Synopsis
+# Yakyu VR
 
-*Yakyu VR* is a [course](https://sa.ucla.edu/ro/Public/SOC/Results/ClassDetail?term_cd=17S&subj_area_cd=COM%20SCI&crs_catlg_no=0174A%20%20%20&class_id=187720200&class_no=%20001%20%20)
+## Synopsis
+
+*Yakyu VR* is a <a href="https://goo.gl/eA6z7y" title="COM SCI 174A">course</a>
 project in development which creates a virtual reality of baseball based on
 the video game series,
 [*Power Pros*](https://en.wikipedia.org/wiki/Power_Pros), developed by
@@ -18,19 +20,21 @@ baseball video games, like
 do not give gamers the option of playing from the vantage point of a particular
 player, and only features gameplay from a third-person perspective.
 
-# Development
+## Development
+
 The current graphics animation only displays a simulation of batting practice.
 Continued development will focus on areas including a more robust collision
 detection and response system, smoother motions abiding by physical laws, and
 simulating an entire baseball game with the other position players included.
 Most of the design will be modeled after that of Power Pros.
 
-# Installation
+## Installation
 
 Download or clone this repository. Please refer to the instructions in
-**Usage** to run this locally.
+[Usage](#usage) to run this locally.
 
-# Usage
+## Usage
+
 There are two options for using this graphics package.
 
 1. Visit [https://viclai.github.io/Yakyu_VR/](https://viclai.github.io/Yakyu_VR/).
@@ -52,7 +56,7 @@ $ python3 -m http.server
 
 The webpage will be served at `http://localhost:8000`.
 
-# External Sources
+## External Sources
 
 The OBJ files and their respective textures used in this project are freely
 available on the Web. They were downloaded from
