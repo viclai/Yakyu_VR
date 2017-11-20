@@ -2,9 +2,8 @@
 
 ## Synopsis
 
-*Yakyu VR* is a <a href="https://goo.gl/eA6z7y" title="COM SCI 174A">course</a>
-project in development which creates a virtual reality of baseball based on
-the video game series,
+*Yakyu VR* is a [course](https://goo.gl/eA6z7y) project in development which
+creates a virtual reality of baseball based on the video game series,
 [*Power Pros*](https://en.wikipedia.org/wiki/Power_Pros), developed by
 [Konami](https://us.konami.com/), a Japanese entertainment company. The goal
 of this project is to give fans the opportunity to see the game from multiple
@@ -19,14 +18,6 @@ baseball video games, like
 [*MLB Power Pros*](https://en.wikipedia.org/wiki/MLB_Power_Pros),
 do not give gamers the option of playing from the vantage point of a particular
 player, and only features gameplay from a third-person perspective.
-
-## Development
-
-The current graphics animation only displays a simulation of batting practice.
-Continued development will focus on areas including a more robust collision
-detection and response system, smoother motions abiding by physical laws, and
-simulating an entire baseball game with the other position players included.
-Most of the design will be modeled after that of Power Pros.
 
 ## Installation
 
@@ -56,9 +47,22 @@ $ python3 -m http.server
 
 The webpage will be served at `http://localhost:8000`.
 
+## Development
+
+The current graphics animation only displays a simulation of batting practice.
+Continued development will focus on areas including a more robust collision
+detection and response system, smoother motions abiding by physical laws, and 
+simulating an entire baseball game with the other position players included.
+Most of the design will be modeled after that of *Power Pros*.
+
+Note that elements of
+[ECMAScript 2015 (ES6)](https://www.ecma-international.org/ecma-262/6.0/) are
+used in the JavaScript code.
+
 ## External Sources
 
 The OBJ files and their respective textures used in this project are freely
 available on the Web. They were downloaded from
 [http://www.cadnav.com/](http://www.cadnav.com/) and
 [https://opengameart.org/](https://opengameart.org/).
+
